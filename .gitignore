@@ -1,0 +1,13 @@
+
+Characters.sbc
+
+*.psd
+*.bat
+*.sln
+*.csproj
+*.ruleset
+
+**/unused
+**/TexturePacking
+**/bin
+**/obj
