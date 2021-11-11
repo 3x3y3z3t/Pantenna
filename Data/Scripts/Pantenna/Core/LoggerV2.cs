@@ -2,104 +2,100 @@
 using Sandbox.ModAPI;
 using System;
 using System.IO;
+using VRage.Game;
+using VRage.Library.Utils;
 
-namespace SharedCore
+namespace ExSharedCore
 {
     public enum LoggerSide
     {
-        SERVER,
-        CLIENT,
+        Common = 0,
+        Server,
+        Client,
     }
 
-    class Logger
+    public class Logger
     {
-        private string m_LoggerName = "";
-        private uint m_LogLevel = 0;
-        private LoggerSide m_LoggerSide = LoggerSide.SERVER;
-        private string m_Filename = "";
-        private TextWriter m_TextWriter = null;
+        private MyTimeSpan m_LocalUtcOffset;
 
-        public Logger(string _name, LoggerSide _side)
+        private TextWriter m_TextWriter;
+
+        private static Logger s_Instance = null;
+
+        private Logger()
+        { }
+
+        ~Logger()
         {
-            m_LoggerName = _name;
-            m_LoggerSide = _side;
+            DeInit();
         }
 
-        public void Init(string _filename)
+        public static bool Init(LoggerSide _loggerSide)
         {
-            m_Filename = _filename;
+            TimeSpan offs;
+            TimeSpan.TryParse(DateTime.Now.ToString("zzz"), out offs);
+
+            switch (_loggerSide)
+            {
+                case LoggerSide.Server:
+                    s_Instance = new Logger
+                    {
+                        m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage("debug_server.log", typeof(ExSharedCore.Logger))
+                    };
+                    break;
+                case LoggerSide.Client:
+                    s_Instance = new Logger
+                    {
+                        m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage("debug_client.log", typeof(ExSharedCore.Logger))
+                    };
+                    break;
+                default:
+                    s_Instance = new Logger
+                    {
+                        m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage("debug_common.log", typeof(ExSharedCore.Logger))
+                    };
+                    break;
+            }
+            s_Instance.m_LocalUtcOffset = new MyTimeSpan(offs.Ticks);
+
+            Log(">>> Log Begin <<<");
+
+            return true;
+        }
+
+        public static bool DeInit()
+        {
+            if (s_Instance == null)
+                return true;
+
+            Log(">>> Log End <<<");
+
+            if (s_Instance.m_TextWriter != null)
+                s_Instance.m_TextWriter.Close();
+            s_Instance = null;
+
+            return true;
+        }
+
+        public static void Log(string _message, uint _level = 0)
+        {
+            if (s_Instance == null)
+                Init(LoggerSide.Common);
 
             try
             {
-                if (m_TextWriter != null)
-                {
-                    m_TextWriter.Close();
-                }
-                if (m_LoggerSide == LoggerSide.SERVER)
-                {
-                    m_TextWriter = MyAPIGateway.Utilities.WriteFileInLocalStorage(_filename, typeof(SharedCore.Logger));
-                    m_TextWriter.WriteLine("PocketShieldV2 LoggerV2 (Server-side) init done.");
-                }
-                else if (m_LoggerSide == LoggerSide.CLIENT)
-                {
-                    m_TextWriter = MyAPIGateway.Utilities.WriteFileInLocalStorage(_filename, typeof(SharedCore.Logger));
-                    m_TextWriter.WriteLine("PocketShieldV2 LoggerV2 (Client-side) init done.");
-                }
-                //else if (m_LoggerSide == LoggerSide.SHIELD)
-                //{
-                //    m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage(_filename, typeof(SharedCore.Logger));
-                //    m_TextWriter.WriteLine("PocketShieldV2 ShieldLoggerV2 init done.");
-                //}
-
-                m_TextWriter.Flush();
+                s_Instance.m_TextWriter.WriteLine("[{0:0}]: {1:0}", s_Instance.GetDateTimeAsString(), _message);
+                s_Instance.m_TextWriter.Flush();
             }
             catch (Exception _e)
             { }
         }
 
-        public void DeInit()
+        internal string GetDateTimeAsString()
         {
-            if (m_TextWriter == null)
-                return;
-
-            try
-            {
-                if (m_LoggerSide == LoggerSide.SERVER)
-                {
-                    m_TextWriter.WriteLine("PocketShield Logger (Server-side) deinit done.");
-                    m_TextWriter.Flush();
-                }
-                else if (m_LoggerSide == LoggerSide.CLIENT)
-                {
-                    m_TextWriter.WriteLine("PocketShield Logger (Client-side) deinit done.");
-                    m_TextWriter.Flush();
-                }
-                //else if (m_LoggerSide == LoggerSide.SHIELD)
-                //{
-                //    m_TextWriter.WriteLine("PocketShieldV2 ShieldLoggerV2 init done.");
-                //    m_TextWriter.Flush();
-                //}
-
-                m_TextWriter.Close();
-                m_TextWriter = null;
-            }
-            catch (Exception _e)
-            { }
+            DateTime datetime = DateTime.UtcNow + m_LocalUtcOffset.TimeSpan;
+            datetime = DateTime.Now;
+            return datetime.ToString("yy.MM.dd HH:mm:ss.ff");
         }
-
-        public void Log(uint _level, string _message)
-        {
-            if (m_TextWriter == null)
-                return;
-
-            try
-            {
-                m_TextWriter.WriteLine(_message);
-                m_TextWriter.Flush();
-            }
-            catch (Exception _e)
-            { }
-        }
-
     }
 }
