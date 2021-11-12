@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using VRage.Game;
 using VRage.Library.Utils;
+using VRage.Utils;
 
 namespace ExSharedCore
 {
@@ -24,40 +25,46 @@ namespace ExSharedCore
 
         private Logger()
         { }
-
-        ~Logger()
-        {
-            DeInit();
-        }
-
+        
         public static bool Init(LoggerSide _loggerSide)
         {
+            MyLog.Default.WriteLine("[Pantenna] Logger.Init() called");
             TimeSpan offs;
             TimeSpan.TryParse(DateTime.Now.ToString("zzz"), out offs);
 
-            switch (_loggerSide)
+            try
             {
-                case LoggerSide.Server:
-                    s_Instance = new Logger
-                    {
-                        m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage("debug_server.log", typeof(ExSharedCore.Logger))
-                    };
-                    break;
-                case LoggerSide.Client:
-                    s_Instance = new Logger
-                    {
-                        m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage("debug_client.log", typeof(ExSharedCore.Logger))
-                    };
-                    break;
-                default:
-                    s_Instance = new Logger
-                    {
-                        m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage("debug_common.log", typeof(ExSharedCore.Logger))
-                    };
-                    break;
+                switch (_loggerSide)
+                {
+                    case LoggerSide.Server:
+                        s_Instance = new Logger
+                        {
+                            m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage("debug_server.log", typeof(ExSharedCore.Logger))
+                        };
+                        break;
+                    case LoggerSide.Client:
+                        s_Instance = new Logger
+                        {
+                            m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage("debug_client.log", typeof(ExSharedCore.Logger))
+                        };
+                        break;
+                    default:
+                        s_Instance = new Logger
+                        {
+                            m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage("debug_common.log", typeof(ExSharedCore.Logger))
+                        };
+                        break;
+                }
+            }
+            catch (Exception _e)
+            {
+                MyLog.Default.WriteLine("[Pantenna]   Problem encountered: " + _e.Message);
+                throw _e;
             }
             s_Instance.m_LocalUtcOffset = new MyTimeSpan(offs.Ticks);
 
+
+            MyLog.Default.WriteLine("[Pantenna]   Logger init done");
             Log(">>> Log Begin <<<");
 
             return true;
@@ -65,14 +72,19 @@ namespace ExSharedCore
 
         public static bool DeInit()
         {
+            MyLog.Default.WriteLine("[Pantenna] Logger.DeInit() called");
             if (s_Instance == null)
+            {
+                MyLog.Default.WriteLine("[Pantenna]   Logger instance is null, there is no need to deinit");
                 return true;
+            }
 
             Log(">>> Log End <<<");
 
             if (s_Instance.m_TextWriter != null)
                 s_Instance.m_TextWriter.Close();
             s_Instance = null;
+            MyLog.Default.WriteLine("[Pantenna]   Logger deinit done");
 
             return true;
         }

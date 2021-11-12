@@ -86,10 +86,14 @@ namespace Pantenna
 
         internal bool Init()
         {
+            Logger.Log("Loading config file...");
             if (LoadConfigFile())
+            {
+                Logger.Log("  Init done");
                 return true;
+            }
 
-            Logger.Log("Config file not found, init with default values");
+            Logger.Log("Failed to load config file, init with default values");
             InitDefault();
             Logger.Log("  Saving config...");
             SaveConfigFile();
@@ -103,43 +107,61 @@ namespace Pantenna
             throw new Exception("InitDefault is not implemented");
         }
 
-        public virtual bool LoadConfigFile()
+        /// <summary> Read the whole Config file. </summary>
+        /// <returns> read config file content as string; or null if file is not existed or read operation fails.</returns>
+        public virtual string PeekConfigFile()
         {
-            //throw new Exception("LoadConfigFile is not implemented");
-            
             if (MyAPIGateway.Utilities.FileExistsInWorldStorage(m_ConfigFileName, GetType()))
             {
-                Logger.Log("Config file found: " + m_ConfigFileName);
-                string data = null;
-                Config config = null;
+                Logger.Log("  Config file found: " + m_ConfigFileName);
                 try
                 {
-                    Logger.Log("Reading config file...");
+                    Logger.Log("  Reading config file...");
                     TextReader reader = MyAPIGateway.Utilities.ReadFileInWorldStorage(m_ConfigFileName, GetType());
-                    data = reader.ReadToEnd();
+                    string data = reader.ReadToEnd();
                     reader.Close();
-                    Logger.Log("  Read content: \n" + data);
-
-                    Logger.Log("Deserializing data...");
-                    config = DeserializeData(data);
-                    Logger.Log("Invalidating data...");
-                    if (!InvalidateConfig(config))
-                    {
-                        Logger.Log("  Invalidate failed, saving legacy data...");
-                        SaveLegacyConfigFile(data);
-                        Logger.Log("  Saving new config...");
-                        SaveConfigFile();
-                    }
-
-                    Logger.Log("Init done");
-                    return true;
+                    Logger.Log("    Read content: \n" + data);
+                    
+                    return data;
                 }
                 catch (Exception _e)
                 {
-                    Logger.Log(">>> Exception <<< " + _e.Message);
-                    Logger.Log("  Parse failed, saving legacy data..");
-                    SaveLegacyConfigFile(data);
+                    Logger.Log("  >>> Exception <<< " + _e.Message);
                 }
+            }
+
+            return null;
+        }
+
+        public virtual bool LoadConfigFile()
+        {
+            string data = PeekConfigFile();
+            if (string.IsNullOrEmpty(data))
+            {
+                return false;
+            }
+
+            Config config = null;
+            try
+            {
+                Logger.Log("  Deserializing data...");
+                config = DeserializeData(data);
+                Logger.Log("  Invalidating data...");
+                if (!InvalidateConfig(config))
+                {
+                    Logger.Log("    Invalidate failed, saving legacy data...");
+                    SaveLegacyConfigFile(data);
+                    Logger.Log("    Saving new config...");
+                    SaveConfigFile();
+                }
+                
+                return true;
+            }
+            catch (Exception _e)
+            {
+                Logger.Log("  >>> Exception <<< " + _e.Message);
+                Logger.Log("    Parse failed, saving legacy data..");
+                SaveLegacyConfigFile(data);
             }
 
             return false;
@@ -163,7 +185,7 @@ namespace Pantenna
             }
             catch (Exception _e)
             {
-                Logger.Log("    TThe fallback method failed...");
+                Logger.Log("    Fallback method failed...");
             }
             return false;
         }
@@ -278,6 +300,34 @@ namespace Pantenna
                 return false;
             }
 
+            ClientConfig config = _config as ClientConfig;
+            if (config == null)
+            {
+                Logger.Log("  This Config is not ClientConfig (this should not happen)");
+                return false;
+            }
+
+            ConfigVersion = config.ConfigVersion;
+
+            ClientUpdateInterval = config.ClientUpdateInterval;
+
+            PanelPosition = config.PanelPosition;
+            PanelSize = config.PanelSize;
+            Padding = config.Padding;
+
+            ShipIconOffsX = config.ShipIconOffsX;
+            TrajectoryIconOffsX = config.TrajectoryIconOffsX;
+            DistanceIconOffsX = config.DistanceIconOffsX;
+            DisplayNameIconOffsX = config.DisplayNameIconOffsX;
+
+            DisplayItemsCount = config.DisplayItemsCount;
+            SpaceBetweenItems = config.SpaceBetweenItems;
+            ItemScale0 = config.ItemScale0;
+            ItemScale1 = config.ItemScale1;
+            ItemScale2 = config.ItemScale2;
+            ItemScale3 = config.ItemScale3;
+            ItemScale4 = config.ItemScale4;
+            
             return true;
         }
     }

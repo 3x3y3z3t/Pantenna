@@ -258,6 +258,7 @@ namespace Pantenna
         protected override void UnloadData()
         {
             Shutdown();
+            MyAPIGateway.Utilities.MessageEntered -= Utilities_MessageEntered;
 
             Logger.DeInit();
         }
@@ -318,27 +319,75 @@ namespace Pantenna
             if (MyAPIGateway.Session.Player == null)
                 return;
 
-            MyAPIGateway.Utilities.ShowNotification("Sent Message: " + _messageText, 5000);
-            Logger.Log("Sent Message: " + _messageText);
+            const string prefix = "/Pantenna";
+            if (!_messageText.StartsWith(prefix))
+                return;
 
-            MyAPIGateway.Utilities.SendMessage("[chat] Sent Message: " + _messageText);
+            Logger.Log("  Command captured: " + _messageText);
+            string[] arguments = _messageText.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (arguments.Length <= 1)
+            {
+                MyAPIGateway.Utilities.ShowNotification("[Pantenna] You didn't specify any arguments", 3000);
+                return;
+            }
 
-            string configs = MyAPIGateway.Utilities.SerializeToXML(ConfigManager.ClientConfig);
+            for (int i = 1; i < arguments.Length; ++i)
+            {
+                string arg = arguments[i].Trim();
+                if (IsArgumentValid(arg))
+                {
+                    Logger.Log("    Argument " + i + " (valid):   " + arg);
+                }
+                else
+                {
+                    Logger.Log("    Argument " + i + " (invalid): " + arg);
+                }
+            }
 
-            MyAPIGateway.Utilities.ShowMissionScreen(
-                screenTitle: "You Chat Something",
-                currentObjectivePrefix: "",
-                currentObjective: "ClientConfig.xml",
-                screenDescription: "Description",
-                callback: null,
-                okButtonCaption: "Click me to OK"
-            );
+            // TODO: clean up this mess;
+            for (int i = 1; i < arguments.Length; ++i)
+            {
+                string arg = arguments[i].Trim();
 
+                if (arg == "reload")
+                {
+                    Logger.Log("  Executing reload command");
+                    ConfigManager.ClientConfig.LoadConfigFile();
+                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config reloaded", 3000);
+                }
+                else if (arg == "LoadedCfg")
+                {
+                    Logger.Log("  Executing LoadedCfg command");
+                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] LoadedCfg Command", 3000);
+                    //string configs = MyAPIGateway.Utilities.SerializeToXML(ConfigManager.ClientConfig);
+                    //MyAPIGateway.Utilities.ShowMissionScreen(
+                    //    screenTitle: "Loaded Configs",
+                    //    currentObjective: "ClientConfig.xml",
+                    //    screenDescription: configs,
+                    //    okButtonCaption: "Close"
+                    //);
+                }
+                else if (arg == "PeekCfg")
+                {
+                    Logger.Log("  Executing PeekCfg command");
+                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] PeekCfg Command", 3000);
+                    //string configs = ConfigManager.ClientConfig.PeekConfigFile();
+                    //MyAPIGateway.Utilities.ShowMissionScreen(
+                    //    screenTitle: "Raw Config File",
+                    //    currentObjective: "ClientConfig.xml",
+                    //    screenDescription: configs,
+                    //    okButtonCaption: "Close"
+                    //);
+                }
+                else
+                {
+                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Unknown Command [" + arg + "] (argument " + i + ")", 3000);
+                    Logger.Log("Unknown argument [" + arg + "] (argument " + i + ")");
+                }
+            }
 
-
-
-
-
+            MyAPIGateway.Utilities.SendMessage("[chat] Sent Command: " + _messageText);
+            
             _sendToOthers = false;
         }
 
@@ -546,6 +595,21 @@ namespace Pantenna
             }
 
             return new SignalData();
+        }
+
+        private bool IsArgumentValid(string _argument)
+        {
+            if (string.IsNullOrEmpty(_argument))
+                return false;
+
+            if (_argument == "reload")
+                return true;
+            else if (_argument == "LoadedCfg")
+                return true;
+            else if (_argument == "PeekCfg")
+                return true;
+
+            return false;
         }
 
         //public static MyRelationsBetweenPlayers GetRelationsBetweenPlayers(long _playerId1, long _playerId2)

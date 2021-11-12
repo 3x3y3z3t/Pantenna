@@ -12,8 +12,13 @@ using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace Draygo.API
 {
+
+
 	public class HudAPIv2
 	{
+
+		
+
 		private static HudAPIv2 instance;
 		private const long REGISTRATIONID = 573804956;
 		private bool registered = false;
@@ -156,6 +161,7 @@ namespace Draygo.API
 			BillBoardHUDMessage,
 			EntityMessage,
 			SpaceMessage,
+			BillboardTriHUDMessage,
 
 			MenuItem = 20,
 			MenuSubCategory,
@@ -990,6 +996,234 @@ namespace Draygo.API
 				BackingObject = null;
 			}
 		}
+
+		public class BillBoardTriHUDMessage : MessageBase
+		{
+
+			private enum EntityMembers : int
+			{
+				Message = 0,
+				Origin = 10,
+				Options,
+				BillBoardColor,
+				Material,
+				Rotation,
+				Width,
+				Height,
+				p0,
+				p1,
+				p2
+			}
+
+			#region Properties
+			/// <summary>
+			/// top left is -1, 1, bottom right is 1 -1
+			/// </summary>
+			public Vector2D Origin
+			{
+				get
+				{
+					return (Vector2D)instance.MessageGet(BackingObject, (int)EntityMembers.Origin);
+				}
+				set
+				{
+					instance.MessageSet(BackingObject, (int)EntityMembers.Origin, value);
+				}
+			}
+
+			/// <summary>
+			/// Use MyStringId.GetOrCompute to turn a string into a MyStringId. 
+			/// </summary>
+			public MyStringId Material
+			{
+				get
+				{
+					return (MyStringId)instance.MessageGet(BackingObject, (int)EntityMembers.Material);
+				}
+				set
+				{
+					instance.MessageSet(BackingObject, (int)EntityMembers.Material, value);
+				}
+			}
+
+
+			/// <summary>
+			/// Set Options, HideHud to true will hide billboard when hud is hidden. Shadowing will draw the element on the shadow layer (behind the text layer)
+			/// </summary>
+			public Options Options
+			{
+				get
+				{
+					return (Options)instance.MessageGet(BackingObject, (int)EntityMembers.Options);
+				}
+				set
+				{
+					instance.MessageSet(BackingObject, (int)EntityMembers.Options, (byte)value);
+				}
+			}
+
+
+			/// <summary>
+			/// Sets the color mask of the billboard, not all billboards support this parameter. 
+			/// </summary>
+			public Color BillBoardColor
+			{
+				get
+				{
+					return (Color)instance.MessageGet(BackingObject, (int)EntityMembers.BillBoardColor);
+				}
+				set
+				{
+					instance.MessageSet(BackingObject, (int)EntityMembers.BillBoardColor, value);
+				}
+			}
+
+			/// <summary>
+			/// Rotate billboard in radians.
+			/// </summary>
+			public float Rotation
+			{
+				get
+				{
+					return (float)instance.MessageGet(BackingObject, (int)EntityMembers.Rotation);
+				}
+				set
+				{
+					instance.MessageSet(BackingObject, (int)EntityMembers.Rotation, value);
+				}
+			}
+
+
+			/// <summary>
+			/// Multiplies the width of the billboard by this amount. Set Scale to 1 if you want to use this to finely control the width of the billboard, such as a value from GetTextLength
+			/// You might need to multiply the result of GetTextLength by 250 or maybe 500 if Scale is 1. Will need experiementing
+			/// </summary>
+			public float Width
+			{
+				get
+				{
+					return (float)instance.MessageGet(BackingObject, (int)EntityMembers.Width);
+				}
+				set
+				{
+					instance.MessageSet(BackingObject, (int)EntityMembers.Width, value);
+				}
+			}
+
+
+			/// <summary>
+			/// Multiplies the height of the billboard by this amount. Set Scale to 1 if you want to use this to finely control the height of the billboard, such as a value from GetTextLength
+			/// </summary>
+			public float Height
+			{
+				get
+				{
+					return (float)instance.MessageGet(BackingObject, (int)EntityMembers.Height);
+				}
+				set
+				{
+					instance.MessageSet(BackingObject, (int)EntityMembers.Height, value);
+				}
+			}
+
+			/// <summary>
+			/// UV P0 (note this is percentage based between 0-1 for X,Y)
+			/// </summary>
+			public Vector2 P0
+			{
+				get
+				{
+					return (Vector2)instance.MessageGet(BackingObject, (int)EntityMembers.p0);
+				}
+				set
+				{
+					instance.MessageSet(BackingObject, (int)EntityMembers.p0, value);
+				}
+			}
+			/// <summary>
+			/// UV P1 (note this is percentage based between 0-1 for X,Y)
+			/// </summary>
+			public Vector2 P1
+			{
+				get
+				{
+					return (Vector2)instance.MessageGet(BackingObject, (int)EntityMembers.p1);
+				}
+				set
+				{
+					instance.MessageSet(BackingObject, (int)EntityMembers.p1, value);
+				}
+			}
+			/// <summary>
+			/// UV P2 (note this is percentage based between 0-1 for X,Y)
+			/// </summary>
+			public Vector2 P2
+			{
+				get
+				{
+					return (Vector2)instance.MessageGet(BackingObject, (int)EntityMembers.p2);
+				}
+				set
+				{
+					instance.MessageSet(BackingObject, (int)EntityMembers.p2, value);
+				}
+			}
+
+			#endregion
+
+
+
+			public BillBoardTriHUDMessage(MyStringId Material, Vector2D Origin, Color BillBoardColor, Vector2 p0, Vector2 p1, Vector2 p2, Vector2D? Offset = null, int TimeToLive = -1, double Scale = 1d, float Width = 1f, float Height = 1f, float Rotation = 0, bool HideHud = true, bool Shadowing = true, BlendTypeEnum Blend = BlendTypeEnum.SDR)
+			{
+				instance.RegisterCheck();
+				BackingObject = instance.CreateMessage(MessageTypes.BillboardTriHUDMessage);
+
+				if (BackingObject != null)
+				{
+
+					this.TimeToLive = TimeToLive;
+					this.Origin = Origin;
+					this.Options = Options.None;
+					if (HideHud)
+						this.Options |= Options.HideHud;
+					if (Shadowing)
+						this.Options |= Options.Shadowing;
+					this.BillBoardColor = BillBoardColor;
+					this.Scale = Scale;
+					this.Material = Material;
+					this.Rotation = Rotation;
+					this.Blend = Blend;
+					if (Offset.HasValue)
+					{
+						this.Offset = Offset.Value;
+					}
+					else
+					{
+						this.Offset = Vector2D.Zero;
+					}
+					this.Width = Width;
+					this.Height = Height;
+					this.P0 = p0;
+					this.P1 = p1;
+					this.P2 = p2;
+				}
+
+
+			}
+
+			public BillBoardTriHUDMessage()
+			{
+				instance.RegisterCheck();
+				BackingObject = instance.CreateMessage(MessageTypes.BillboardTriHUDMessage);
+			}
+
+			public override void DeleteMessage()
+			{
+				instance.DeleteMessage(BackingObject);
+				BackingObject = null;
+			}
+		}
+
 		public class SpaceMessage : MessageBase
 		{
 			private enum EntityMembers : int
