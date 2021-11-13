@@ -2,13 +2,7 @@
 using ExSharedCore;
 using Sandbox.ModAPI;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Serialization;
-using VRage.Game.ModAPI.Ingame.Utilities;
 using VRageMath;
 
 namespace Pantenna
@@ -19,7 +13,8 @@ namespace Pantenna
         public const ushort MSG_HANDLER_ID_INITIAL_SYNC = 1250;
 
         #region Server/Client Default Config
-        public const string CLIENT_CONFIG_VERSION = "1";
+        public const string CLIENT_CONFIG_VERSION = "2";
+        public const int CLIENT_LOG_LEVEL = 0;
         public const int SERVER_UPDATE_INTERVAL = 30; // Server will update 2ups;
         public const int CLIENT_UPDATE_INTERVAL = 6; // Client will update 10ups;
         #endregion
@@ -81,6 +76,7 @@ namespace Pantenna
     public class Config
     {
         public string ConfigVersion { get; set; }
+        public int LogLevel { get; set; }
 
         protected string m_ConfigFileName = "";
 
@@ -239,6 +235,7 @@ namespace Pantenna
         {
             // init with default;
             ConfigVersion = Constants.CLIENT_CONFIG_VERSION;
+            LogLevel = Constants.CLIENT_LOG_LEVEL;
 
             ClientUpdateInterval = Constants.CLIENT_UPDATE_INTERVAL;
             
@@ -297,6 +294,7 @@ namespace Pantenna
                 Logger.Log("  Config version mismatch: read " + _config.ConfigVersion + ", newest version " + Constants.CLIENT_CONFIG_VERSION);
 
                 Logger.Log("  Updating config...");
+                // TODO: Updating new config here;
                 return false;
             }
 
@@ -308,6 +306,7 @@ namespace Pantenna
             }
 
             ConfigVersion = config.ConfigVersion;
+            LogLevel = config.LogLevel;
 
             ClientUpdateInterval = config.ClientUpdateInterval;
 

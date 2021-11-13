@@ -5,12 +5,10 @@ using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.Game.Voxels;
 using VRage.Utils;
 using VRageMath;
 
@@ -18,180 +16,6 @@ using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace Pantenna
 {
-    public class ItemCard
-    {
-        private const float ItemHeight = 32;
-
-        public Vector2D Position { get; set; } /* Position is Top-Left. */
-        public Vector2D NextItemPosition
-        {
-            get
-            {
-                return new Vector2D(Position.X, Position.Y + ItemHeight + ConfigManager.ClientConfig.SpaceBetweenItems);
-            }
-        }
-
-        public Color LabelColor { get; set; }
-        public bool Visible { get; set; }
-
-        public SignalType SignalType { get; set; }
-        public float RelativeVelocity { get; set; }
-        public float Distance { get; set; }
-        public string DisplayNameString { get; set; }
-
-        public float ShipIconOffsX;
-        public float TrajectoryIconOffsX;
-        public float DistanceIconOffsX;
-        public float DisplayNameIconOffsX;
-
-        #region Internal HUD Elements
-        private StringBuilder DistanceSB;
-        private StringBuilder DisplayNameSB;
-        
-        private HudAPIv2.BillBoardHUDMessage ShipIcon;
-        private HudAPIv2.BillBoardHUDMessage TrajectoryIcon;
-        private HudAPIv2.HUDMessage DistanceLabel;
-        private HudAPIv2.HUDMessage DisplayNameLabel;
-        #endregion
-
-        public ItemCard(Vector2D _position, Color _labelColor, SignalType _signalType = SignalType.Unknown, float _relativeVelocity = 0.0f, float _distance = 0.0f, string _displayName = "")
-        {
-            Position = _position;
-            LabelColor = _labelColor;
-            Visible = false;
-
-            ShipIconOffsX = Constants.SHIP_ICON_OFFS_X;
-            TrajectoryIconOffsX = Constants.TRAJECTORY_ICON_OFFS_X;
-            DistanceIconOffsX = Constants.DISTANCE_ICON_OFFS_X;
-            DisplayNameIconOffsX = Constants.DISPLAY_NAME_ICON_OFFS_X;
-
-            SignalType = _signalType;
-            RelativeVelocity = _relativeVelocity;
-            Distance = _distance;
-            DisplayNameString = _displayName;
-
-            #region Internal HUD Elements Initializations
-            DistanceSB = new StringBuilder(FormatDistanceAsString(_distance));
-            DisplayNameSB = new StringBuilder(_displayName);
-
-            ShipIcon = new HudAPIv2.BillBoardHUDMessage()
-            {
-                Material = MyStringId.GetOrCompute("Default_8px"),
-                Origin = Position,
-                Offset = new Vector2D(ShipIconOffsX, 0.0),
-                Width = ItemHeight,
-                Height = ItemHeight,
-                uvEnabled = true,
-                uvSize = new Vector2(1.0f, 1.0f),
-                uvOffset = new Vector2(1.0f, 1.0f),
-                TextureSize = 1.0f,
-                Visible = Visible,
-                Blend = BlendTypeEnum.PostPP,
-                Options = HudAPIv2.Options.Pixel
-            };
-            TrajectoryIcon = new HudAPIv2.BillBoardHUDMessage()
-            {
-                Material = MyStringId.GetOrCompute("Default_8px"),
-                Origin = Position,
-                Offset = new Vector2D(TrajectoryIconOffsX, 0.0),
-                Width = ItemHeight,
-                Height = ItemHeight,
-                uvEnabled = true,
-                uvSize = new Vector2(1.0f, 1.0f),
-                uvOffset = new Vector2(1.0f, 1.0f),
-                TextureSize = 1.0f,
-                Visible = Visible,
-                Blend = BlendTypeEnum.PostPP,
-                Options = HudAPIv2.Options.Pixel
-            };
-            DistanceLabel = new HudAPIv2.HUDMessage()
-            {
-                Message = DistanceSB,
-                Origin = Position,
-                Offset = new Vector2D(DistanceIconOffsX, 0.0),
-                Font = "monospace",
-                InitialColor = LabelColor,
-                Visible = Visible,
-                Blend = BlendTypeEnum.PostPP,
-                Options = HudAPIv2.Options.Pixel
-            };
-            DisplayNameLabel = new HudAPIv2.HUDMessage()
-            {
-                Message = DisplayNameSB,
-                Origin = Position,
-                Offset = new Vector2D(DisplayNameIconOffsX, 0.0),
-                Font = "monospace",
-                InitialColor = LabelColor,
-                Visible = Visible,
-                Blend = BlendTypeEnum.PostPP,
-                Options = HudAPIv2.Options.Pixel
-            };
-            #endregion
-        }
-
-        public void UpdateItemCard(SignalData _signal)
-        {
-            SignalType = _signal.SignalType;
-            RelativeVelocity = _signal.Velocity;
-            Distance = _signal.Distance;
-            DisplayNameString = _signal.DisplayName;
-
-            UpdateItemCard();
-        }
-
-        public void UpdateItemCard()
-        {
-            switch (SignalType)
-            {
-                case SignalType.LargeGrid:
-                    ShipIcon.Material = MyStringId.GetOrCompute("Default_8px");
-                    break;
-                case SignalType.SmallGrid:
-                    ShipIcon.Material = MyStringId.GetOrCompute("Default_8px");
-                    break;
-                case SignalType.Character:
-                    ShipIcon.Material = MyStringId.GetOrCompute("Default_8px");
-                    break;
-                default:
-                    ShipIcon.Material = MyStringId.GetOrCompute("Default_8px");
-                    break;
-            }
-            ShipIcon.Visible = Visible;
-
-            if (RelativeVelocity > 0.0f)
-            {
-                TrajectoryIcon.Material = MyStringId.GetOrCompute("Default_8px");
-            }
-            else if (RelativeVelocity < 0.0f)
-            {
-                TrajectoryIcon.Material = MyStringId.GetOrCompute("Default_8px");
-            }
-            else
-            {
-                TrajectoryIcon.Material = MyStringId.GetOrCompute("Default_8px");
-            }
-            TrajectoryIcon.Visible = Visible;
-
-            DistanceSB.Clear();
-            DistanceSB.Append(FormatDistanceAsString(Distance));
-            DistanceLabel.Visible = Visible;
-
-            DisplayNameSB.Clear();
-            DisplayNameSB.Append(DisplayNameString);
-            DisplayNameLabel.Visible = Visible;
-        }
-
-        private static string FormatDistanceAsString(float _distance)
-        {
-            if (_distance > 1000.0f)
-            {
-
-            }
-
-            return string.Format("{0:F2} m", _distance);
-        }
-    }
-
     internal class SignalComparer : IComparer<SignalData>
     {
         public int Compare(SignalData _x, SignalData _y)
@@ -223,13 +47,14 @@ namespace Pantenna
     [MySessionComponentDescriptor(MyUpdateOrder.AfterSimulation)]
     public class Session_PantennaClientV2 : MySessionComponentBase
     {
-
         public bool IsServer { get; private set; }
         public bool IsDedicated { get; private set; }
         public bool IsSetupDone { get; private set; }
 
         private List<SignalData> m_Signals = null; /* This keeps track of all non-relayed visible enemy signals. */
         private List<ItemCard> m_ItemCards = null; /* This keeps track of all 5 displayed item cards. */
+
+        private HudAPIv2.BillBoardHUDMessage m_Background = null;
 
         private ItemCard m_Item0;
         private ItemCard m_Item1;
@@ -279,34 +104,37 @@ namespace Pantenna
                 if (!IsSetupDone)
                 {
                     Setup();
+                    return;
                 }
 
                 if (!IsTextHudApiInitDone)
                 {
                     InitTextHud();
+                    return;
                 }
-
-                // Attempt to steal from https://github.com/THDigi/BuildInfo/blob/master/Data/Scripts/BuildInfo/Systems/GameConfig.cs#L52...
-                // Stealing In Progress...
-                if (MyAPIGateway.Input.IsNewGameControlPressed(Sandbox.Game.MyControlsSpace.TOGGLE_HUD))
-                {
-                    // TODO: update hud state;
-                    // 0 = Off, 1 = Hints, 2 = Basic;
-
-                    if (MyAPIGateway.Session.Config != null)
-                    {
-                        m_IsHudVisible = (MyAPIGateway.Session.Config.HudState == 0);
-                    }
-                }
-
+                
                 Logger.Log("Doing Main Job...");
                 Logger.Log("  (fake)");
                 //DoMainJob();
 
-                if (m_IsHudDirty)
+            }
+
+            // Attempt to steal from https://github.com/THDigi/BuildInfo/blob/master/Data/Scripts/BuildInfo/Systems/GameConfig.cs#L52...
+            // Stealing In Progress...
+            if (MyAPIGateway.Input.IsNewGameControlPressed(Sandbox.Game.MyControlsSpace.TOGGLE_HUD) ||
+               MyAPIGateway.Input.IsNewGameControlPressed(Sandbox.Game.MyControlsSpace.PAUSE_GAME))
+            {
+                // 0 = Off, 1 = Hints, 2 = Basic;
+                if (MyAPIGateway.Session.Config != null)
                 {
-                    UpdateTextHud();
+                    m_IsHudVisible = MyAPIGateway.Session.Config.HudState != 0;
                 }
+                m_IsHudDirty = true;
+            }
+
+            if (m_IsHudDirty)
+            {
+                UpdateTextHud();
             }
 
             // end of method;
@@ -352,32 +180,40 @@ namespace Pantenna
                 if (arg == "reload")
                 {
                     Logger.Log("  Executing reload command");
-                    ConfigManager.ClientConfig.LoadConfigFile();
-                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config reloaded", 3000);
+                    if (ConfigManager.ClientConfig.LoadConfigFile())
+                    {
+                        MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config reloaded", 3000);
+                        UpdateTextHudPosition();
+                    } else
+                    {
+                        MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config reload failed", 3000);
+                    }
                 }
                 else if (arg == "LoadedCfg")
                 {
                     Logger.Log("  Executing LoadedCfg command");
-                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] LoadedCfg Command", 3000);
-                    //string configs = MyAPIGateway.Utilities.SerializeToXML(ConfigManager.ClientConfig);
-                    //MyAPIGateway.Utilities.ShowMissionScreen(
-                    //    screenTitle: "Loaded Configs",
-                    //    currentObjective: "ClientConfig.xml",
-                    //    screenDescription: configs,
-                    //    okButtonCaption: "Close"
-                    //);
+                    //MyAPIGateway.Utilities.ShowNotification("[Pantenna] LoadedCfg Command", 3000);
+                    string configs = MyAPIGateway.Utilities.SerializeToXML(ConfigManager.ClientConfig);
+                    MyAPIGateway.Utilities.ShowMissionScreen(
+                        screenTitle: "Loaded Configs",
+                        currentObjectivePrefix: "",
+                        currentObjective: "ClientConfig.xml",
+                        screenDescription: configs,
+                        okButtonCaption: "Close"
+                    );
                 }
                 else if (arg == "PeekCfg")
                 {
                     Logger.Log("  Executing PeekCfg command");
-                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] PeekCfg Command", 3000);
-                    //string configs = ConfigManager.ClientConfig.PeekConfigFile();
-                    //MyAPIGateway.Utilities.ShowMissionScreen(
-                    //    screenTitle: "Raw Config File",
-                    //    currentObjective: "ClientConfig.xml",
-                    //    screenDescription: configs,
-                    //    okButtonCaption: "Close"
-                    //);
+                    //MyAPIGateway.Utilities.ShowNotification("[Pantenna] PeekCfg Command", 3000);
+                    string configs = ConfigManager.ClientConfig.PeekConfigFile();
+                    MyAPIGateway.Utilities.ShowMissionScreen(
+                        screenTitle: "Raw Config File",
+                        currentObjectivePrefix: "",
+                        currentObjective: "ClientConfig.xml",
+                        screenDescription: configs,
+                        okButtonCaption: "Close"
+                    );
                 }
                 else
                 {
@@ -385,6 +221,9 @@ namespace Pantenna
                     Logger.Log("Unknown argument [" + arg + "] (argument " + i + ")");
                 }
             }
+
+
+
 
             MyAPIGateway.Utilities.SendMessage("[chat] Sent Command: " + _messageText);
             
@@ -400,6 +239,11 @@ namespace Pantenna
 
             //m_Logger.Log("  Initializing Text HUD API v2...");
             m_TextHudAPI = new HudAPIv2();
+
+            if (MyAPIGateway.Session.Config != null)
+            {
+                m_IsHudVisible = MyAPIGateway.Session.Config.HudState != 0;
+            }
 
             Logger.Log("  IsServer = " + IsServer);
             Logger.Log("  IsDedicated = " + IsDedicated);
@@ -642,12 +486,28 @@ namespace Pantenna
                 Logger.Log("  Text Hud API hasn't recieved heartbeat.");
                 if (m_Ticks % config.ClientUpdateInterval == 0)
                 {
-                    MyAPIGateway.Utilities.ShowNotification("Text HUD API mod is missing. HUD will not be displayed.", config.ClientUpdateInterval, MyFontEnum.Red);
+                    MyAPIGateway.Utilities.ShowNotification("Text HUD API mod is missing. HUD will not be displayed.", (config.ClientUpdateInterval * (int)(100.0f / 6.0f)), MyFontEnum.Red);
                     Logger.Log("  Text Hud API mod is missing.");
                 }
 
                 return;
             }
+
+            m_Background = new HudAPIv2.BillBoardHUDMessage()
+            {
+                Material = MyStringId.GetOrCompute("Default_8px"),
+                Origin = config.PanelPosition,
+                Offset = new Vector2D(0.0, 0.0),
+                Width = (float)config.PanelSize.X,
+                Height = (float)config.PanelSize.Y,
+                uvEnabled = true,
+                uvSize = new Vector2(1.0f, 1.0f),
+                uvOffset = new Vector2(0.0f, 0.0f),
+                TextureSize = 1.0f,
+                Visible = false,
+                Blend = BlendTypeEnum.PostPP,
+                Options = HudAPIv2.Options.Pixel
+            };
 
             Vector2D cursorPos = config.PanelPosition + config.Padding;
 
@@ -663,7 +523,9 @@ namespace Pantenna
             m_ItemCards.Add(item3);
             m_ItemCards.Add(item4);
 
+            m_IsHudDirty = true;
             IsTextHudApiInitDone = true;
+            Logger.Log("InitTextHud() done");
         }
 
         private void UpdateTextHud()
@@ -671,14 +533,19 @@ namespace Pantenna
             Logger.Log("Starting UpdateTextHud()");
             if (!IsTextHudApiInitDone)
                 return;
-            if (MyAPIGateway.Session.Config == null)
-                return;
 
             ClientConfig config = ConfigManager.ClientConfig;
 
+            m_Background.Visible = m_IsHudVisible;
+            Logger.Log("  m_IsHudVisible = " + m_IsHudVisible);
+
+            Logger.Log("  Signal count: " + m_Signals.Count);
             //for (int i = 0; i < config.DisplayItemsCount; ++i)
             for (int i = 0; i < 5; ++i)
             {
+                if (i >= m_Signals.Count)
+                    break;
+
                 SignalData signal = m_Signals[i];
                 ItemCard item = m_ItemCards[i];
 
@@ -687,6 +554,40 @@ namespace Pantenna
             }
 
             m_IsHudDirty = false;
+            Logger.Log("UpdateTextHud() done");
+        }
+
+        private void UpdateTextHudPosition()
+        {
+            Logger.Log("Starting UpdateTextHudPosition()");
+            if (!IsTextHudApiInitDone)
+                return;
+
+            ClientConfig config = ConfigManager.ClientConfig;
+
+            m_Background.Origin = config.PanelPosition;
+            m_Background.Width = (float)config.PanelSize.X;
+            m_Background.Height = (float)config.PanelSize.Y;
+
+            Vector2D cursorPos = config.PanelPosition + config.Padding;
+            //for (int i = 0; i < config.DisplayItemsCount; ++i)
+            for (int i = 0; i < 5; ++i)
+            {
+                ItemCard item = m_ItemCards[i];
+
+                item.Position = cursorPos;
+                cursorPos = item.NextItemPosition;
+
+
+                
+            }
+
+
+            HudAPIv2.HUDMessage label;
+
+
+
+            m_IsHudDirty = true;
         }
 
     }
