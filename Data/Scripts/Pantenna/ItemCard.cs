@@ -1,6 +1,7 @@
 ﻿// ;
 using Draygo.API;
 using System.Text;
+using VRage.Game;
 using VRage.Utils;
 using VRageMath;
 
@@ -50,6 +51,11 @@ namespace Pantenna
             LabelColor = _labelColor;
             Visible = false;
 
+            //ShipIconOffsX = ConfigManager.ClientConfig.ShipIconOffsX;
+            //TrajectoryIconOffsX = ConfigManager.ClientConfig.TrajectoryIconOffsX;
+            //DistanceIconOffsX = ConfigManager.ClientConfig.DistanceIconOffsX;
+            //DisplayNameIconOffsX = ConfigManager.ClientConfig.DisplayNameIconOffsX;
+
             ShipIconOffsX = Constants.SHIP_ICON_OFFS_X;
             TrajectoryIconOffsX = Constants.TRAJECTORY_ICON_OFFS_X;
             DistanceIconOffsX = Constants.DISTANCE_ICON_OFFS_X;
@@ -73,7 +79,7 @@ namespace Pantenna
                 Height = ItemHeight,
                 uvEnabled = true,
                 uvSize = new Vector2(1.0f, 1.0f),
-                uvOffset = new Vector2(1.0f, 1.0f),
+                uvOffset = new Vector2(0.0f, 0.0f),
                 TextureSize = 1.0f,
                 Visible = Visible,
                 Blend = BlendTypeEnum.PostPP,
@@ -88,7 +94,7 @@ namespace Pantenna
                 Height = ItemHeight,
                 uvEnabled = true,
                 uvSize = new Vector2(1.0f, 1.0f),
-                uvOffset = new Vector2(1.0f, 1.0f),
+                uvOffset = new Vector2(0.0f, 0.0f),
                 TextureSize = 1.0f,
                 Visible = Visible,
                 Blend = BlendTypeEnum.PostPP,
@@ -98,9 +104,11 @@ namespace Pantenna
             {
                 Message = DistanceSB,
                 Origin = Position,
-                Offset = new Vector2D(DistanceIconOffsX, 0.0),
-                Font = "monospace",
+                Offset = new Vector2D(DistanceIconOffsX, 9.0),
+                //Font = MyFontEnum.Red,
+                Scale = 16.0f,
                 InitialColor = LabelColor,
+                ShadowColor = Color.Black,
                 Visible = Visible,
                 Blend = BlendTypeEnum.PostPP,
                 Options = HudAPIv2.Options.Pixel
@@ -109,9 +117,11 @@ namespace Pantenna
             {
                 Message = DisplayNameSB,
                 Origin = Position,
-                Offset = new Vector2D(DisplayNameIconOffsX, 0.0),
-                Font = "monospace",
+                Offset = new Vector2D(DisplayNameIconOffsX, 9.0),
+                //Font = MyFontEnum.Red,
+                Scale = 16.0f,
                 InitialColor = LabelColor,
+                ShadowColor = Color.Black,
                 Visible = Visible,
                 Blend = BlendTypeEnum.PostPP,
                 Options = HudAPIv2.Options.Pixel
@@ -175,10 +185,11 @@ namespace Pantenna
         {
             if (_distance > 1000.0f)
             {
-
+                _distance /= 1000.0f;
+            return string.Format("{0:F1}km", _distance);
             }
 
-            return string.Format("{0:F2} m", _distance);
+            return string.Format("{0:F1} m", _distance);
         }
     }
 }

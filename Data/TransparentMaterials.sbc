@@ -14,5 +14,29 @@
       <AlphaSaturation>1</AlphaSaturation>
     </TransparentMaterial>
 
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>Pantenna_BG</SubtypeId>
+      </Id>
+      <Texture>Textures\Icons\Pantenna_BG.dds</Texture>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+    </TransparentMaterial>
+
+    <TransparentMaterial>
+      <Id>
+        <TypeId>TransparentMaterialDefinition</TypeId>
+        <SubtypeId>Pantenna_BG_white</SubtypeId>
+      </Id>
+      <Texture>Textures\Icons\Pantenna_BG_white.dds</Texture>
+      <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
+      <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
+      <AlphaMistingEnable>false</AlphaMistingEnable>
+      <AlphaSaturation>1</AlphaSaturation>
+    </TransparentMaterial>
+
   </TransparentMaterials>
 </Definitions>
