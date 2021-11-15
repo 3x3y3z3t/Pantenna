@@ -104,7 +104,7 @@ namespace Pantenna
                 ShadowColor = Color.Black,
                 Visible = Visible,
                 Blend = BlendTypeEnum.PostPP,
-                Options = HudAPIv2.Options.Pixel
+                Options = HudAPIv2.Options.Pixel | HudAPIv2.Options.Shadowing
             };
             m_DisplayNameLabel = new HudAPIv2.HUDMessage()
             {
@@ -117,7 +117,7 @@ namespace Pantenna
                 ShadowColor = Color.Black,
                 Visible = Visible,
                 Blend = BlendTypeEnum.PostPP,
-                Options = HudAPIv2.Options.Pixel
+                Options = HudAPIv2.Options.Pixel | HudAPIv2.Options.Shadowing
             };
             #endregion
         }

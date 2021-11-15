@@ -124,12 +124,7 @@ namespace Pantenna
             if (MyAPIGateway.Input.IsNewGameControlPressed(Sandbox.Game.MyControlsSpace.TOGGLE_HUD) ||
                MyAPIGateway.Input.IsNewGameControlPressed(Sandbox.Game.MyControlsSpace.PAUSE_GAME))
             {
-                // 0 = Off, 1 = Hints, 2 = Basic;
-                if (MyAPIGateway.Session.Config != null)
-                {
-                    m_IsHudVisible = MyAPIGateway.Session.Config.HudState != 0;
-                }
-                m_IsHudDirty = true;
+                UpdateHudConfigs();
             }
 
             if (m_IsHudDirty)
@@ -322,21 +317,27 @@ namespace Pantenna
 
             foreach (MyDataBroadcaster broadcaster in receiver.BroadcastersInRange)
             {
+                if (broadcaster == null)
+                {
+                    Logger.Log("  Signal broadcaster is null", 4);
+                    continue;
+                }
+
+                if (broadcaster.Entity == null)
+                {
+                    Logger.Log("  (" + "???" + "  m) Signal with no Entity", 4);
+                    continue;
+                }
+                
                 double distance = Vector3D.Distance(player.Character.GetPosition(), broadcaster.BroadcastPosition);
                 if (distance > ConfigManager.ClientConfig.RadarMaxRange)
                 {
                     Logger.Log("  (" + distance + "  m) Signal Out Of Range", 4);
                     continue;
                 }
-
-                if (broadcaster.Entity == null)
-                {
-                    Logger.Log("  (" + distance + "  m) Signal with no Entity", 4);
-                    continue;
-                }
-
+                
                 string factionTag = "";
-
+                
                 IMyCharacter charSignal = broadcaster.Entity as IMyCharacter;
                 if (charSignal != null)
                 {
@@ -411,7 +412,7 @@ namespace Pantenna
                         Logger.Log("  (" + distance + "  m) Signal that is not a CubeBlock: " + broadcaster.Entity.DisplayName, 4);
                         continue;
                     }
-
+                    
                     MyCubeGrid grid = broadcaster.Entity.GetTopMostParent(null) as MyCubeGrid;
                     if (grid == null || grid.IsPreview)
                     {
@@ -443,7 +444,7 @@ namespace Pantenna
                             signalType = SignalType.SmallGrid;
                             break;
                     }
-
+                    
                     IMyFaction faction = MyAPIGateway.Session.Factions.TryGetPlayerFaction(block.OwnerId);
                     if (faction != null)
                     {
@@ -548,7 +549,7 @@ namespace Pantenna
             if (MyAPIGateway.Session.Config != null)
             {
                 m_HudBGOpacity = MyAPIGateway.Session.Config.HUDBkOpacity;
-                m_IsHudVisible = MyAPIGateway.Session.Config.HudState != 0;
+                m_IsHudVisible = MyAPIGateway.Session.Config.HudState != 0; // 0 = Off, 1 = Hints, 2 = Basic;
             }
 
             //// https://github.com/THDigi/BuildInfo/blob/master/Data/Scripts/BuildInfo/Utilities/Utils.cs#L256-L263

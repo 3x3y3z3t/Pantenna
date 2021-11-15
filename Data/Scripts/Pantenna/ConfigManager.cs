@@ -3,6 +3,7 @@ using ExSharedCore;
 using Sandbox.ModAPI;
 using System;
 using System.IO;
+using System.Xml.Serialization;
 using VRageMath;
 
 namespace Pantenna
@@ -13,7 +14,7 @@ namespace Pantenna
         //public const ushort MSG_HANDLER_ID_INITIAL_SYNC = 1250;
 
         #region Server/Client Default Config
-        public const string CLIENT_CONFIG_VERSION = "4";
+        public const string CLIENT_CONFIG_VERSION = "5";
         public const uint CLIENT_LOG_LEVEL = 5;
         //public const int SERVER_UPDATE_INTERVAL = 30; // Server will update 2ups;
         public const int CLIENT_UPDATE_INTERVAL = 6; // Client will update 10ups;
@@ -21,9 +22,9 @@ namespace Pantenna
 
         #region Hud Config
         public const float PANEL_POS_X = 1475.0f;
-        public const float PANEL_POS_Y = 620.0f;
+        public const float PANEL_POS_Y = 590.0f;
         public const float PANEL_WIDTH = 420.0f;
-        public const float PANEL_HEIGHT = 210.0f;
+        public const float PANEL_HEIGHT = 240.0f;
         public const float PADDING = 10.0f;
         public const float SPACE_BETWEEN_ITEMS = 5.0f;
         
@@ -213,6 +214,7 @@ namespace Pantenna
 
         #region Hud Config
         public Vector2D PanelPosition { get; set; }
+        [XmlIgnore]
         public Vector2D PanelSize { get; set; }
         public float Padding { get; set; }
 
