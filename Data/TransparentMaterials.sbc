@@ -29,9 +29,9 @@
     <TransparentMaterial>
       <Id>
         <TypeId>TransparentMaterialDefinition</TypeId>
-        <SubtypeId>Pantenna_BG_white</SubtypeId>
+        <SubtypeId>Pantenna_ShipIcons</SubtypeId>
       </Id>
-      <Texture>Textures\Icons\Pantenna_BG_white.dds</Texture>
+      <Texture>Textures\Icons\Pantenna_ShipIcons.dds</Texture>
       <CanBeAffectedByOtherLights>false</CanBeAffectedByOtherLights>
       <SoftParticleDistanceScale>0</SoftParticleDistanceScale>
       <AlphaMistingEnable>false</AlphaMistingEnable>

@@ -1,5 +1,6 @@
 ﻿// ;
 using Draygo.API;
+using ExSharedCore;
 using System.Text;
 using VRage.Game;
 using VRage.Utils;
@@ -24,87 +25,79 @@ namespace Pantenna
 
         public Color LabelColor { get; set; }
         public bool Visible { get; set; }
+        public float TrajectorySensitivity { get; set; }
 
         public SignalType SignalType { get; set; }
         public float RelativeVelocity { get; set; }
         public float Distance { get; set; }
         public string DisplayNameString { get; set; }
 
-        public float ShipIconOffsX;
-        public float TrajectoryIconOffsX;
-        public float DistanceIconOffsX;
-        public float DisplayNameIconOffsX;
+        private int m_ShipIconTextureSlot = 3; // because that slot is empty :))
+        private int m_TrajectoryTextureSlot = 3; // because that slot is empty :))
 
         #region Internal HUD Elements
-        private StringBuilder DistanceSB;
-        private StringBuilder DisplayNameSB;
+        private StringBuilder m_DistanceSB = null;
+        private StringBuilder m_DisplayNameSB = null;
 
-        private HudAPIv2.BillBoardHUDMessage ShipIcon;
-        private HudAPIv2.BillBoardHUDMessage TrajectoryIcon;
-        private HudAPIv2.HUDMessage DistanceLabel;
-        private HudAPIv2.HUDMessage DisplayNameLabel;
+        private HudAPIv2.BillBoardHUDMessage m_ShipIcon = null;
+        private HudAPIv2.BillBoardHUDMessage m_TrajectoryIcon = null;
+        private HudAPIv2.HUDMessage m_DistanceLabel = null;
+        private HudAPIv2.HUDMessage m_DisplayNameLabel = null;
         #endregion
 
         public ItemCard(Vector2D _position, Color _labelColor, SignalType _signalType = SignalType.Unknown, float _relativeVelocity = 0.0f, float _distance = 0.0f, string _displayName = "")
         {
+            ClientConfig config = ConfigManager.ClientConfig;
             Position = _position;
             LabelColor = _labelColor;
             Visible = false;
-
-            //ShipIconOffsX = ConfigManager.ClientConfig.ShipIconOffsX;
-            //TrajectoryIconOffsX = ConfigManager.ClientConfig.TrajectoryIconOffsX;
-            //DistanceIconOffsX = ConfigManager.ClientConfig.DistanceIconOffsX;
-            //DisplayNameIconOffsX = ConfigManager.ClientConfig.DisplayNameIconOffsX;
-
-            ShipIconOffsX = Constants.SHIP_ICON_OFFS_X;
-            TrajectoryIconOffsX = Constants.TRAJECTORY_ICON_OFFS_X;
-            DistanceIconOffsX = Constants.DISTANCE_ICON_OFFS_X;
-            DisplayNameIconOffsX = Constants.DISPLAY_NAME_ICON_OFFS_X;
+            TrajectorySensitivity = config.TrajectorySensitivity;
 
             SignalType = _signalType;
             RelativeVelocity = _relativeVelocity;
             Distance = _distance;
             DisplayNameString = _displayName;
 
+            
             #region Internal HUD Elements Initializations
-            DistanceSB = new StringBuilder(FormatDistanceAsString(_distance));
-            DisplayNameSB = new StringBuilder(_displayName);
+            m_DistanceSB = new StringBuilder(Utils.FormatDistanceAsString(_distance));
+            m_DisplayNameSB = new StringBuilder(_displayName);
 
-            ShipIcon = new HudAPIv2.BillBoardHUDMessage()
+            m_ShipIcon = new HudAPIv2.BillBoardHUDMessage()
             {
-                Material = MyStringId.GetOrCompute("Default_8px"),
+                Material = MyStringId.GetOrCompute("Pantenna_ShipIcons"),
                 Origin = Position,
-                Offset = new Vector2D(ShipIconOffsX, 0.0),
+                Offset = new Vector2D(0.0, 0.0),
                 Width = ItemHeight,
                 Height = ItemHeight,
                 uvEnabled = true,
-                uvSize = new Vector2(1.0f, 1.0f),
+                uvSize = new Vector2(64.0f / 256.0f, 64.0f / 128.0f),
                 uvOffset = new Vector2(0.0f, 0.0f),
                 TextureSize = 1.0f,
                 Visible = Visible,
                 Blend = BlendTypeEnum.PostPP,
                 Options = HudAPIv2.Options.Pixel
             };
-            TrajectoryIcon = new HudAPIv2.BillBoardHUDMessage()
+            m_TrajectoryIcon = new HudAPIv2.BillBoardHUDMessage()
             {
-                Material = MyStringId.GetOrCompute("Default_8px"),
+                Material = MyStringId.GetOrCompute("Pantenna_ShipIcons"),
                 Origin = Position,
-                Offset = new Vector2D(TrajectoryIconOffsX, 0.0),
+                Offset = new Vector2D(ItemHeight, 0.0),
                 Width = ItemHeight,
                 Height = ItemHeight,
                 uvEnabled = true,
-                uvSize = new Vector2(1.0f, 1.0f),
+                uvSize = new Vector2(64.0f / 256.0f, 64.0f / 128.0f),
                 uvOffset = new Vector2(0.0f, 0.0f),
                 TextureSize = 1.0f,
                 Visible = Visible,
                 Blend = BlendTypeEnum.PostPP,
                 Options = HudAPIv2.Options.Pixel
             };
-            DistanceLabel = new HudAPIv2.HUDMessage()
+            m_DistanceLabel = new HudAPIv2.HUDMessage()
             {
-                Message = DistanceSB,
+                Message = m_DistanceSB,
                 Origin = Position,
-                Offset = new Vector2D(DistanceIconOffsX, 9.0),
+                Offset = new Vector2D(ItemHeight * 2.0f + config.SpaceBetweenItems, 9.0),
                 //Font = MyFontEnum.Red,
                 Scale = 16.0f,
                 InitialColor = LabelColor,
@@ -113,11 +106,11 @@ namespace Pantenna
                 Blend = BlendTypeEnum.PostPP,
                 Options = HudAPIv2.Options.Pixel
             };
-            DisplayNameLabel = new HudAPIv2.HUDMessage()
+            m_DisplayNameLabel = new HudAPIv2.HUDMessage()
             {
-                Message = DisplayNameSB,
+                Message = m_DisplayNameSB,
                 Origin = Position,
-                Offset = new Vector2D(DisplayNameIconOffsX, 9.0),
+                Offset = new Vector2D(ItemHeight * 4.0f + config.SpaceBetweenItems + config.Padding, 9.0),
                 //Font = MyFontEnum.Red,
                 Scale = 16.0f,
                 InitialColor = LabelColor,
@@ -135,7 +128,6 @@ namespace Pantenna
             RelativeVelocity = _signal.Velocity;
             Distance = _signal.Distance;
             DisplayNameString = _signal.DisplayName;
-
             UpdateItemCard();
         }
 
@@ -144,52 +136,58 @@ namespace Pantenna
             switch (SignalType)
             {
                 case SignalType.LargeGrid:
-                    ShipIcon.Material = MyStringId.GetOrCompute("Default_8px");
+                    m_ShipIconTextureSlot = 1;
                     break;
                 case SignalType.SmallGrid:
-                    ShipIcon.Material = MyStringId.GetOrCompute("Default_8px");
+                    m_ShipIconTextureSlot = 0;
                     break;
                 case SignalType.Character:
-                    ShipIcon.Material = MyStringId.GetOrCompute("Default_8px");
+                    m_ShipIconTextureSlot = 2;
                     break;
                 default:
-                    ShipIcon.Material = MyStringId.GetOrCompute("Default_8px");
+                    m_ShipIconTextureSlot = 3;
                     break;
             }
-            ShipIcon.Visible = Visible;
+            m_ShipIcon.uvOffset = new Vector2((m_ShipIconTextureSlot % 4) * 0.25f, (m_ShipIconTextureSlot / 4) * 0.5f);
+            m_ShipIcon.Visible = Visible;
 
-            if (RelativeVelocity > 0.0f)
+            if (RelativeVelocity > TrajectorySensitivity)
             {
-                TrajectoryIcon.Material = MyStringId.GetOrCompute("Default_8px");
+                Logger.Log(string.Format("Vel = {0:F2}, Sens = {1:0}", RelativeVelocity, TrajectorySensitivity), 5);
+                m_TrajectoryTextureSlot = 4;
             }
-            else if (RelativeVelocity < 0.0f)
+            else if (RelativeVelocity < -TrajectorySensitivity)
             {
-                TrajectoryIcon.Material = MyStringId.GetOrCompute("Default_8px");
+                Logger.Log(string.Format("Vel = {0:F2}, Sens = {1:0}", RelativeVelocity, -TrajectorySensitivity), 5);
+                m_TrajectoryTextureSlot = 5;
             }
             else
             {
-                TrajectoryIcon.Material = MyStringId.GetOrCompute("Default_8px");
+                m_TrajectoryTextureSlot = 6;
             }
-            TrajectoryIcon.Visible = Visible;
+            m_TrajectoryIcon.uvOffset = new Vector2((m_TrajectoryTextureSlot % 4) * 0.25f, (m_TrajectoryTextureSlot / 4) * 0.5f);
+            m_TrajectoryIcon.Visible = Visible;
 
-            DistanceSB.Clear();
-            DistanceSB.Append(FormatDistanceAsString(Distance));
-            DistanceLabel.Visible = Visible;
+            m_DistanceSB.Clear();
+            m_DistanceSB.Append(Utils.FormatDistanceAsString(Distance));
+            m_DistanceLabel.Visible = Visible;
 
-            DisplayNameSB.Clear();
-            DisplayNameSB.Append(DisplayNameString);
-            DisplayNameLabel.Visible = Visible;
+            m_DisplayNameSB.Clear();
+            m_DisplayNameSB.Append(DisplayNameString);
+            //m_DisplayNameSB.Append(RelativeVelocity);
+            m_DisplayNameLabel.Visible = Visible;
         }
 
-        private static string FormatDistanceAsString(float _distance)
+        public void UpdateItemConfig()
         {
-            if (_distance > 1000.0f)
-            {
-                _distance /= 1000.0f;
-            return string.Format("{0:F1}km", _distance);
-            }
+            ClientConfig config = ConfigManager.ClientConfig;
 
-            return string.Format("{0:F1} m", _distance);
+            m_ShipIcon.Origin = Position;
+            m_TrajectoryIcon.Origin = Position;
+            m_DistanceLabel.Origin = Position;
+            m_DistanceLabel.Offset = new Vector2D(ItemHeight * 2.0f + config.SpaceBetweenItems, 9.0);
+            m_DisplayNameLabel.Origin = Position;
+            m_DisplayNameLabel.Offset = new Vector2D(ItemHeight * 4.0f + config.SpaceBetweenItems + config.Padding, 9.0);
         }
     }
 }

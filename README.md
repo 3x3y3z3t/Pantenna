@@ -8,4 +8,4 @@ This display will be useful when the Engineer is controlling a Remote Control bl
 
 # Version
 Current version:
-- v0.5
+- v1.0

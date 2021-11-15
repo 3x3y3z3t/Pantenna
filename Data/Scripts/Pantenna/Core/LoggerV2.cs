@@ -1,4 +1,5 @@
 ﻿// ;
+using Pantenna;
 using Sandbox.ModAPI;
 using System;
 using System.IO;
@@ -18,8 +19,9 @@ namespace ExSharedCore
     public class Logger
     {
         private MyTimeSpan m_LocalUtcOffset;
-
+        
         private TextWriter m_TextWriter;
+        private uint m_LogLevel = 5;
 
         private static Logger s_Instance = null;
 
@@ -89,10 +91,21 @@ namespace ExSharedCore
             return true;
         }
 
+        public static void SetLogLevel(uint _level)
+        {
+            if (s_Instance == null)
+                Init(LoggerSide.Common);
+
+            s_Instance.m_LogLevel = _level;
+        }
+
         public static void Log(string _message, uint _level = 0)
         {
             if (s_Instance == null)
                 Init(LoggerSide.Common);
+
+            if (_level > s_Instance.m_LogLevel)
+                return;
 
             try
             {
