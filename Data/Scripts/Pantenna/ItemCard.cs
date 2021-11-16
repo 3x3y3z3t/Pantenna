@@ -22,6 +22,14 @@ namespace Pantenna
                 return new Vector2D(Position.X, Position.Y + ItemHeight + ConfigManager.ClientConfig.SpaceBetweenItems);
             }
         }
+        public float DisplayNameLabelWidth
+        {
+            get
+            {
+                ClientConfig config = ConfigManager.ClientConfig;
+                return ((float)config.PanelSize.X - config.Padding * 2.0f - ItemHeight * 4.0f - config.SpaceBetweenItems);
+            }
+        }
 
         public Color LabelColor { get; set; }
         public bool Visible { get; set; }
@@ -67,7 +75,6 @@ namespace Pantenna
             {
                 Material = MyStringId.GetOrCompute("Pantenna_ShipIcons"),
                 Origin = Position,
-                Offset = new Vector2D(0.0, 0.0),
                 Width = ItemHeight,
                 Height = ItemHeight,
                 uvEnabled = true,
@@ -122,14 +129,20 @@ namespace Pantenna
             #endregion
         }
 
-        public void UpdateItemCard(SignalData _signal)
+        ~ItemCard()
         {
-            SignalType = _signal.SignalType;
-            RelativeVelocity = _signal.Velocity;
-            Distance = _signal.Distance;
-            DisplayNameString = _signal.DisplayName;
-            UpdateItemCard();
+            m_DistanceSB = null;
+            m_DisplayNameSB = null;
         }
+
+        //public void UpdateItemCard(SignalData _signal)
+        //{
+        //    SignalType = _signal.SignalType;
+        //    RelativeVelocity = _signal.Velocity;
+        //    Distance = _signal.Distance;
+        //    DisplayNameString = _signal.DisplayName;
+        //    UpdateItemCard();
+        //}
 
         public void UpdateItemCard()
         {
@@ -185,9 +198,7 @@ namespace Pantenna
             m_ShipIcon.Origin = Position;
             m_TrajectoryIcon.Origin = Position;
             m_DistanceLabel.Origin = Position;
-            m_DistanceLabel.Offset = new Vector2D(ItemHeight * 2.0f + config.SpaceBetweenItems, 9.0);
             m_DisplayNameLabel.Origin = Position;
-            m_DisplayNameLabel.Offset = new Vector2D(ItemHeight * 4.0f + config.SpaceBetweenItems + config.Padding, 9.0);
         }
     }
 }

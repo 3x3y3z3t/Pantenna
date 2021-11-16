@@ -86,6 +86,12 @@ namespace Pantenna
             MyAPIGateway.Gui.GuiControlRemoved -= Gui_GuiControlRemoved;
             MyAPIGateway.Utilities.MessageEntered -= Utilities_MessageEntered;
 
+            m_Signals.Clear();
+            m_Signals = null;
+
+            m_Signals_Last.Clear();
+            m_Signals_Last = null;
+
             Logger.DeInit();
         }
 
@@ -153,79 +159,12 @@ namespace Pantenna
                 MyAPIGateway.Utilities.ShowNotification("[Pantenna] You didn't specify any arguments", 3000);
                 return;
             }
-
-            for (int i = 1; i < arguments.Length; ++i)
-            {
-                string arg = arguments[i].Trim();
-                if (IsArgumentValid(arg))
-                {
-                    Logger.Log("    Argument " + i + " (valid):   " + arg);
-                }
-                else
-                {
-                    Logger.Log("    Argument " + i + " (invalid): " + arg);
-                }
-            }
-
-            // TODO: clean up this mess;
-            for (int i = 1; i < arguments.Length; ++i)
-            {
-                string arg = arguments[i].Trim();
-
-                if (arg == "ReloadCfg")
-                {
-                    Logger.Log("  Executing reload command");
-                    if (ConfigManager.ClientConfig.LoadConfigFile())
-                    {
-                        MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config reloaded", 3000);
-                        m_RadarPanel.UpdatePanelConfig();
-                        m_IsHudDirty = true;
-                    }
-                    else
-                    {
-                        MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config reload failed", 3000);
-                    }
-                }
-                else if (arg == "LoadedCfg")
-                {
-                    Logger.Log("  Executing LoadedCfg command");
-                    //MyAPIGateway.Utilities.ShowNotification("[Pantenna] LoadedCfg Command", 3000);
-                    string configs = MyAPIGateway.Utilities.SerializeToXML(ConfigManager.ClientConfig);
-                    MyAPIGateway.Utilities.ShowMissionScreen(
-                        screenTitle: "Loaded Configs",
-                        currentObjectivePrefix: "",
-                        currentObjective: "ClientConfig.xml",
-                        screenDescription: configs,
-                        okButtonCaption: "Close"
-                    );
-                }
-                else if (arg == "PeekCfg")
-                {
-                    Logger.Log("  Executing PeekCfg command");
-                    //MyAPIGateway.Utilities.ShowNotification("[Pantenna] PeekCfg Command", 3000);
-                    string configs = ConfigManager.ClientConfig.PeekConfigFile();
-                    MyAPIGateway.Utilities.ShowMissionScreen(
-                        screenTitle: "Raw Config File",
-                        currentObjectivePrefix: "",
-                        currentObjective: "ClientConfig.xml",
-                        screenDescription: configs,
-                        okButtonCaption: "Close"
-                    );
-                }
-                //else if (arg.StartsWith("opacity="))
-                //{
-                //    float.TryParse(arg.Remove(0, 8), out magicNum);
-                //    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Opacity coeff. changed to " + magicNum, 3000);
-                //    UpdateHudConfigs();
-                //}
-                else
-                {
-                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Unknown Command [" + arg + "] (argument " + i + ")", 3000);
-                    Logger.Log("Unknown argument [" + arg + "] (argument " + i + ")");
-                }
-            }
             
-            MyAPIGateway.Utilities.SendMessage("[chat] Sent Command: " + _messageText);
+            for (int i = 1; i < arguments.Length; ++i)
+            {
+                string arg = arguments[i].Trim();
+                ProcessCommand(arg);
+            }
             
             _sendToOthers = false;
         }
@@ -529,19 +468,65 @@ namespace Pantenna
             return new SignalData();
         }
 
-        private bool IsArgumentValid(string _argument)
+        private bool ProcessCommand(string _command)
         {
-            if (string.IsNullOrEmpty(_argument))
-                return false;
-
-            if (_argument == "reload")
-                return true;
-            else if (_argument == "LoadedCfg")
-                return true;
-            else if (_argument == "PeekCfg")
-                return true;
-
-            return false;
+            switch (_command)
+            {
+                case "ReloadCfg":
+                {
+                    Logger.Log("  Executing reload command");
+                    if (ConfigManager.ClientConfig.LoadConfigFile())
+                    {
+                        MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config reloaded", 3000);
+                        m_RadarPanel.UpdatePanelConfig();
+                        m_IsHudDirty = true;
+                    }
+                    else
+                    {
+                        MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config reload failed", 3000);
+                    }
+                    return true;
+                }
+                case "LoadedCfg":
+                {
+                    Logger.Log("  Executing LoadedCfg command");
+                    //MyAPIGateway.Utilities.ShowNotification("[Pantenna] LoadedCfg Command", 3000);
+                    string configs = MyAPIGateway.Utilities.SerializeToXML(ConfigManager.ClientConfig);
+                    MyAPIGateway.Utilities.ShowMissionScreen(
+                        screenTitle: "Loaded Configs",
+                        currentObjectivePrefix: "",
+                        currentObjective: "ClientConfig.xml",
+                        screenDescription: configs,
+                        okButtonCaption: "Close"
+                    );
+                    return true;
+                }
+                case "PeekCfg":
+                {
+                    Logger.Log("  Executing PeekCfg command");
+                    //MyAPIGateway.Utilities.ShowNotification("[Pantenna] PeekCfg Command", 3000);
+                    string configs = ConfigManager.ClientConfig.PeekConfigFile();
+                    MyAPIGateway.Utilities.ShowMissionScreen(
+                        screenTitle: "Raw Config File",
+                        currentObjectivePrefix: "",
+                        currentObjective: "ClientConfig.xml",
+                        screenDescription: configs,
+                        okButtonCaption: "Close"
+                    );
+                    return true;
+                }
+                default:
+                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Unknown Command [" + _command + "]", 3000);
+                    Logger.Log("Unknown argument [" + _command + "]");
+                    return false;
+            }
+            
+            //else if (arg.StartsWith("opacity="))
+            //{
+            //    float.TryParse(arg.Remove(0, 8), out magicNum);
+            //    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Opacity coeff. changed to " + magicNum, 3000);
+            //    UpdateHudConfigs();
+            //}
         }
 
         private void UpdateHudConfigs()
