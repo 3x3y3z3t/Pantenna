@@ -1,53 +1,48 @@
 ﻿// ;
 using Draygo.API;
 using ExSharedCore;
+using Sandbox.Game;
 using Sandbox.Game.Entities;
-using Sandbox.Game.GameSystems;
 using Sandbox.ModAPI;
 using System;
 using System.Collections.Generic;
 using VRage.Game;
 using VRage.Game.Components;
-using VRage.Game.Entity;
 using VRage.Game.ModAPI;
-using VRage.Groups;
-using VRage.Utils;
 using VRageMath;
-
-using BlendTypeEnum = VRageRender.MyBillboard.BlendTypeEnum;
 
 namespace Pantenna
 {
-    internal class SignalComparer : IComparer<SignalData>
-    {
-        public int Compare(SignalData _x, SignalData _y)
-        {
-            // sort by distance, nearer signal will be higher;
-            if (_x.Distance < _y.Distance)
-                return 1;
-            if (_x.Distance > _y.Distance)
-                return -1;
+    //internal class SignalComparer : IComparer<SignalData>
+    //{
+    //    public int Compare(SignalData _x, SignalData _y)
+    //    {
+    //        // sort by distance, nearer signal will be higher;
+    //        if (_x.Distance < _y.Distance)
+    //            return 1;
+    //        if (_x.Distance > _y.Distance)
+    //            return -1;
 
-            // sort by display name, alphabetically;
-            int diff = _x.DisplayName.CompareTo(_y.DisplayName);
-            if (diff > 0)
-                return 1;
-            if (diff < 0)
-                return -1;
+    //        // sort by display name, alphabetically;
+    //        int diff = _x.DisplayName.CompareTo(_y.DisplayName);
+    //        if (diff > 0)
+    //            return 1;
+    //        if (diff < 0)
+    //            return -1;
 
-            // sort by entity id;
-            if (_x.EntityId > _y.EntityId)
-                return 1;
-            if (_x.EntityId < _y.EntityId)
-                return -1;
+    //        // sort by entity id;
+    //        if (_x.EntityId > _y.EntityId)
+    //            return 1;
+    //        if (_x.EntityId < _y.EntityId)
+    //            return -1;
 
-            // same object, this should not happen;
-            return 0;
-        }
-    }
+    //        // same object, this should not happen;
+    //        return 0;
+    //    }
+    //}
 
     [MySessionComponentDescriptor(MyUpdateOrder.AfterSimulation)]
-    public class Session_PantennaClientV2 : MySessionComponentBase
+    public partial class Session_PantennaClient : MySessionComponentBase
     {
         public bool IsServer { get; private set; }
         public bool IsDedicated { get; private set; }
@@ -59,20 +54,20 @@ namespace Pantenna
         private RadarPannel m_RadarPanel = null;
                 
         private HudAPIv2 m_TextHudAPI = null;
-        private bool IsTextHudApiInitDone = false;
+        //private bool IsTextHudApiInitDone = false;
         private bool m_IsHudDirty = false;
+        private bool m_IsTextHudModMissingConfirmed = false;
 
         private bool m_IsHudVisible = false;
         private float m_HudBGOpacity = 1.0f;
-        //private static float magicNum = 0.75f;
 
         private int m_Ticks = 0;
 
         public override void LoadData()
         {
+            Logger.Init(LoggerSide.Client);
             ConfigManager.ForceInit();
-
-            //m_Signals = new SortedSet<SignalData>(new SignalComparer());
+            
             m_Signals = new List<SignalData>();
             m_Signals_Last = new List<SignalData>();
 
@@ -107,22 +102,27 @@ namespace Pantenna
             {
                 if (MyAPIGateway.Session == null)
                     return;
-
+                
                 if (!IsSetupDone)
                 {
                     Setup();
                     return;
                 }
 
-                if (!IsTextHudApiInitDone)
+                if (!m_IsTextHudModMissingConfirmed && !m_TextHudAPI.Heartbeat && m_Ticks >= 300)
                 {
-                    InitTextHud();
-                    return;
+                    Logger.Log("Text Hud API still hasn't recieved heartbeat.", 3);
+                    //MyAPIGateway.Utilities.ShowNotification("Text HUD API mod is missing. HUD will not be displayed.", (config.ClientUpdateInterval * (int)(100.0f / 6.0f)), MyFontEnum.Red);
+                    MyAPIGateway.Utilities.ShowNotification("Text HUD API mod is missing. HUD will not be displayed.", 3000, MyFontEnum.Red);
+                    Logger.Log("  Text Hud API mod is missing.", 3);
+                    m_IsTextHudModMissingConfirmed = true;
                 }
-                
+
+                if (!config.ModEnabled)
+                    return;
+
                 Logger.Log("Doing Main Job...", 3);
                 DoMainJob();
-
             }
 
             // Attempt to steal from https://github.com/THDigi/BuildInfo/blob/master/Data/Scripts/BuildInfo/Systems/GameConfig.cs#L52...
@@ -137,14 +137,14 @@ namespace Pantenna
             {
                 UpdateTextHud();
             }
-
+            
             // end of method;
             return;
         }
 
         private void Utilities_MessageEntered(string _messageText, ref bool _sendToOthers)
         {
-            Logger.Log(">>> Ultilities_MessageEntered triggered <<<");
+            Logger.Log(">>> Ultilities_MessageEntered triggered <<<", 5);
             if (MyAPIGateway.Session.Player == null)
                 return;
 
@@ -152,20 +152,9 @@ namespace Pantenna
             if (!_messageText.StartsWith(prefix))
                 return;
 
-            Logger.Log("  Command captured: " + _messageText);
-            string[] arguments = _messageText.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            if (arguments.Length <= 1)
-            {
-                MyAPIGateway.Utilities.ShowNotification("[Pantenna] You didn't specify any arguments", 3000);
-                return;
-            }
-            
-            for (int i = 1; i < arguments.Length; ++i)
-            {
-                string arg = arguments[i].Trim();
-                ProcessCommand(arg);
-            }
-            
+            Logger.Log("  Command captured: " + _messageText, 3);
+            ProcessCommands(_messageText);
+                        
             _sendToOthers = false;
         }
         
@@ -186,6 +175,24 @@ namespace Pantenna
             }
         }
 
+        private void InitTextHudCallback()
+        {
+            Logger.Log("Starting InitTextHudCallback()", 5);
+            ClientConfig config = ConfigManager.ClientConfig;
+            
+            m_RadarPanel = new RadarPannel()
+            {
+                Visible = m_IsHudVisible,
+                BackgroundOpacity = m_HudBGOpacity
+            };
+            //m_RadarPanel.UpdatePanelConfig();
+
+            m_IsHudDirty = true;
+            //IsTextHudApiInitDone = true;
+            
+            Logger.Log("InitTextHudCallback() done", 5);
+        }
+
         public void Setup()
         {
             IsServer = (MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE || MyAPIGateway.Multiplayer.IsServer);
@@ -196,7 +203,7 @@ namespace Pantenna
             Logger.SetLogLevel(ConfigManager.ClientConfig.LogLevel);
 
             //m_Logger.Log("  Initializing Text HUD API v2...");
-            m_TextHudAPI = new HudAPIv2();
+            m_TextHudAPI = new HudAPIv2(InitTextHudCallback);
             
             UpdateHudConfigs();
 
@@ -244,190 +251,22 @@ namespace Pantenna
             }
 
             Logger.Log("  Getting Character signal reciever...", 4);
-            MyDataReceiver receiver = player.Character.Components.Get<MyDataReceiver>();
+            MyDataReceiver receiver = character.Components.Get<MyDataReceiver>();
             if (receiver == null)
             {
-                Logger.Log("    Your Character [" + player.Character + "] doesn't have receiver.", 4);
-                //SignalData data = new SignalData(0L, SignalType.Unknown, SignalRelation.Unknown, -1.0f, 0.0f, "Error! Character doesn't have receiver.");
-                //m_Signals.Add(data);
-                //m_IsHudDirty = true;
+                Logger.Log("    Your Character [" + character + "] doesn't have receiver.", 4);
+                m_Signals.Clear();
+                m_Signals_Last.Clear();
+                m_IsHudDirty = true;
                 return false;
             }
 
-            foreach (MyDataBroadcaster broadcaster in receiver.BroadcastersInRange)
+            if (!PopulateSignals(receiver))
             {
-                if (broadcaster == null)
-                {
-                    Logger.Log("  Signal broadcaster is null", 4);
-                    continue;
-                }
-
-                if (broadcaster.Entity == null)
-                {
-                    Logger.Log("  (" + "???" + "  m) Signal with no Entity", 4);
-                    continue;
-                }
-                
-                double distance = Vector3D.Distance(player.Character.GetPosition(), broadcaster.BroadcastPosition);
-                if (distance > ConfigManager.ClientConfig.RadarMaxRange)
-                {
-                    Logger.Log("  (" + distance + "  m) Signal Out Of Range", 4);
-                    continue;
-                }
-                
-                string factionTag = "";
-                
-                IMyCharacter charSignal = broadcaster.Entity as IMyCharacter;
-                if (charSignal != null)
-                {
-                    if (charSignal.EntityId == character.EntityId)
-                    {
-                        Logger.Log("  (" + distance + "  m) Signal is Me [" + charSignal.DisplayName + "]", 4);
-                        continue;
-                    }
-
-                    SignalRelation relation = SignalRelation.Unknown;
-#if true
-                    switch (player.GetRelationTo(charSignal.ControllerInfo.ControllingIdentityId))
-#else
-                    switch (GetRelationsBetweenPlayers(_player.IdentityId, charEnt.ControllerInfo.ControllingIdentityId))
-#endif
-                    {
-                        case MyRelationsBetweenPlayerAndBlock.Friends:
-                            relation = SignalRelation.Ally;
-                            break;
-                        case MyRelationsBetweenPlayerAndBlock.Neutral:
-                            relation = SignalRelation.Neutral;
-                            break;
-                        case MyRelationsBetweenPlayerAndBlock.Enemies:
-                            relation = SignalRelation.Enemy;
-                            break;
-                    }
-                    
-                    IMyFaction faction = MyAPIGateway.Session.Factions.TryGetPlayerFaction(charSignal.ControllerInfo.ControllingIdentityId);
-                    if (faction != null)
-                    {
-                        factionTag = faction.Tag + ".";
-                        //Logger.Log("  Tag = " + factionTag);
-                    }
-                    else
-                    {
-                        factionTag = "";
-                        Logger.Log("  Faction for <" + charSignal.ControllerInfo.ControllingIdentityId + "> is null", 5);
-                    }
-
-                    SignalData oldData = TryGetSignal(charSignal.EntityId);
-                    if (oldData.EntityId == charSignal.EntityId)
-                    {
-                        //m_Signals.Remove(oldData);
-
-                        if (relation == SignalRelation.Enemy)
-                        {
-                            oldData.Relation = relation;
-                            oldData.Velocity = (float)distance - oldData.Distance;
-                            oldData.Distance = (float)distance;
-                            oldData.DisplayName = charSignal.DisplayName;
-
-                            m_Signals.Add(oldData);
-                        }
-                    }
-                    else
-                    {
-                        if (relation == SignalRelation.Enemy)
-                        {
-                            SignalData data = new SignalData(charSignal.EntityId, SignalType.Character, relation, (float)distance, 0.0f, factionTag + charSignal.DisplayName);
-                            m_Signals.Add(data);
-                        }
-                    }
-                    Logger.Log("  (" + distance + "  m) Signal as Character [" + factionTag + charSignal.DisplayName + "] (" + relation + ")", 4);
-
-                    continue;
-                } // endif (charEnt != null)
-
-                {
-                    MyCubeBlock block = broadcaster.Entity as MyCubeBlock;
-                    if (block == null)
-                    {
-                        Logger.Log("  (" + distance + "  m) Signal that is not a CubeBlock: " + broadcaster.Entity.DisplayName, 4);
-                        continue;
-                    }
-                    
-                    MyCubeGrid grid = broadcaster.Entity.GetTopMostParent(null) as MyCubeGrid;
-                    if (grid == null || grid.IsPreview)
-                    {
-                        Logger.Log("  (" + distance + "  m) Signal that is not a CubeGrid: " + broadcaster.Entity.DisplayName, 4);
-                        continue;
-                    }
-
-                    SignalRelation relation = SignalRelation.Unknown;
-                    switch (player.GetRelationTo(block.OwnerId))
-                    {
-                        case MyRelationsBetweenPlayerAndBlock.Friends:
-                            relation = SignalRelation.Ally;
-                            break;
-                        case MyRelationsBetweenPlayerAndBlock.Neutral:
-                            relation = SignalRelation.Neutral;
-                            break;
-                        case MyRelationsBetweenPlayerAndBlock.Enemies:
-                            relation = SignalRelation.Enemy;
-                            break;
-                    }
-
-                    SignalType signalType = SignalType.Unknown;
-                    switch (grid.GridSizeEnum)
-                    {
-                        case MyCubeSize.Large:
-                            signalType = SignalType.LargeGrid;
-                            break;
-                        case MyCubeSize.Small:
-                            signalType = SignalType.SmallGrid;
-                            break;
-                    }
-                    
-                    IMyFaction faction = MyAPIGateway.Session.Factions.TryGetPlayerFaction(block.OwnerId);
-                    if (faction != null)
-                    {
-                        factionTag = faction.Tag + ".";
-                        //Logger.Log("  Tag = " + factionTag);
-                    }
-                    else
-                    {
-                        Logger.Log("  Faction for <" + block.OwnerId + "> is null", 5);
-                    }
-                    
-                    SignalData oldData = TryGetSignal(grid.EntityId);
-                    if (oldData.EntityId == grid.EntityId)
-                    {
-                        //m_Signals.Remove(oldData);
-                        //Logger.Log("  Detect old grid.");
-                        //Logger.Log("    Distance = " + oldData.Distance + " -> " + distance);
-
-                        oldData.Relation = relation;
-                        oldData.Velocity = (float)distance - oldData.Distance;
-                        oldData.Distance = (float)distance;
-                        oldData.DisplayName = block.DisplayNameText;
-
-                        if (relation == SignalRelation.Enemy)
-                        {
-                            m_Signals.Add(oldData);
-                        }
-                    }
-                    else
-                    {
-                        if (relation == SignalRelation.Enemy)
-                        {
-                            SignalData data = new SignalData(grid.EntityId, signalType, relation, (float)distance, 0.0f, factionTag + block.DisplayNameText);
-                            m_Signals.Add(data);
-                        }
-                    }
-                    
-                    Logger.Log("  (" + distance + "  m) Signal as CubeGrid (" + grid.GridSizeEnum + ") [" + factionTag + block.DisplayNameText + "]", 4);
-
-                    continue;
-                } // end 'broadcasterEntity as MyCubeGrid;
+                // TODO: Log something here;
+                return false;
             }
-            
-            //m_Signals.Sort(new SignalComparer());
+
             m_Signals.Sort((SignalData _x, SignalData _y) =>
             {
                 // sort by distance, nearer signal will be higher;
@@ -454,10 +293,163 @@ namespace Pantenna
             });
 
             m_IsHudDirty = true;
+
             return true;
         }
 
-        private SignalData TryGetSignal(long _entityId)
+        private bool PopulateSignals(MyDataReceiver _receiver)
+        {
+            foreach (MyDataBroadcaster broadcaster in _receiver.BroadcastersInRange)
+            {
+                if (broadcaster == null)
+                {
+                    Logger.Log("  Signal broadcaster is null", 4);
+                    continue;
+                }
+                if (broadcaster.Entity == null)
+                {
+                    Logger.Log("  Signal with no Entity", 4);
+                    continue;
+                }
+                
+                IMyPlayer player = MyAPIGateway.Session.Player;
+                IMyCharacter character = player.Character;
+
+                double distance = Vector3D.Distance(player.Character.GetPosition(), broadcaster.BroadcastPosition);
+                if (distance > ConfigManager.ClientConfig.RadarMaxRange)
+                {
+                    Logger.Log("  (" + distance + "  m) Signal Out Of Range", 4);
+                    continue;
+                }
+
+                if (TryInterpretSignalAsCharacter(broadcaster.Entity, distance))
+                {
+                    Logger.Log("  (" + distance + "  m) Signal is Character [" + broadcaster.Entity.DisplayName + "]", 4);
+                    continue;
+                }
+
+                if (TryInterpretSignalAsCubeGrid(broadcaster.Entity, distance))
+                {
+                    Logger.Log("  (" + distance + "  m) Signal is Grid [" + broadcaster.Entity.DisplayName + "]", 4);
+                    continue;
+                }
+
+                // TODO: failure (unknown signal);
+                Logger.Log("  (" + distance + "  m) Unidentified Signal [" + broadcaster.Entity.DisplayName + "]", 4);
+            }
+            
+            return true;
+        }
+
+        private bool TryInterpretSignalAsCharacter(VRage.ModAPI.IMyEntity _entity, double _distance)
+        {
+            if (IsSignalAdded(_entity.EntityId))
+            {
+                Logger.Log("  (" + _distance + "  m) Signal [" + _entity.DisplayName + "] has already been added", 4);
+                return true;
+            }
+
+            IMyCharacter charSignal = _entity as IMyCharacter;
+            if (charSignal == null)
+            {
+                return false;
+            }
+
+            if (charSignal.EntityId == MyAPIGateway.Session.Player.Character.EntityId)
+            {
+                Logger.Log("  (" + _distance + "  m) Signal is Me [" + charSignal.DisplayName + "]", 4);
+                return true;
+            }
+
+            MyRelationsBetweenPlayerAndBlock relation = MyAPIGateway.Session.Player.GetRelationTo(charSignal.ControllerInfo.ControllingIdentityId);
+            
+            string displayName = "";
+            IMyFaction faction = MyAPIGateway.Session.Factions.TryGetPlayerFaction(charSignal.ControllerInfo.ControllingIdentityId);
+            if (faction != null)
+            {
+                displayName = faction.Tag + "." + charSignal.DisplayName;
+            }
+            else
+            {
+                //factionTag = "";
+                displayName = charSignal.DisplayName;
+                Logger.Log("  Faction for <" + charSignal.ControllerInfo.ControllingIdentityId + ">[" + charSignal.DisplayName + "] is null", 5);
+            }
+
+            float velocity = 0.0f;
+            SignalData lastData = TryGetLastSignalData(charSignal.EntityId);
+            if (lastData.EntityId == charSignal.EntityId)
+            {
+                velocity = (float)_distance - lastData.Distance;
+            }
+
+            m_Signals.Add(new SignalData(charSignal.EntityId, SignalType.Character, relation, (float)_distance, velocity, displayName));
+            Logger.Log("  (" + _distance + "  m) Signal is Character [" + displayName + "]", 4);
+
+            return true;
+        }
+
+        private bool TryInterpretSignalAsCubeGrid(VRage.ModAPI.IMyEntity _entity, double _distance)
+        {
+                MyCubeBlock block = _entity as MyCubeBlock;
+            if (block == null)
+            {
+                //Logger.Log("  (" + _distance + "  m) Signal that is not a CubeBlock: " + _entity.DisplayName, 4);
+                return false;
+            }
+                MyCubeGrid grid = _entity.GetTopMostParent(null) as MyCubeGrid;
+            if (grid == null || grid.IsPreview)
+            {
+                //Logger.Log("  (" + _distance + "  m) Signal that is not a CubeGrid: " + _entity.DisplayName, 4);
+                return false;
+            }
+
+            if (IsSignalAdded(grid.EntityId))
+            {
+                Logger.Log("  (" + _distance + "  m) Signal [" + block.DisplayNameText + "] belongs to grid [" + grid.DisplayNameText + "] that has already been added", 4);
+                return true;
+            }
+
+            MyRelationsBetweenPlayerAndBlock relation = MyAPIGateway.Session.Player.GetRelationTo(block.OwnerId);
+
+            SignalType signalType = SignalType.Unknown;
+            switch (grid.GridSizeEnum)
+            {
+                case MyCubeSize.Large:
+                    signalType = SignalType.LargeGrid;
+                    break;
+                case MyCubeSize.Small:
+                    signalType = SignalType.SmallGrid;
+                    break;
+            }
+
+            string displayName = "";
+            IMyFaction faction = MyAPIGateway.Session.Factions.TryGetPlayerFaction(block.OwnerId);
+            if (faction != null)
+            {
+                displayName = faction.Tag + "." + block.DisplayNameText;
+            }
+            else
+            {
+                //factionTag = "";
+                displayName = block.DisplayNameText;
+                Logger.Log("  Faction for <" + block.OwnerId + "> is null", 5);
+            }
+
+            float velocity = 0.0f;
+            SignalData lastData = TryGetLastSignalData(grid.EntityId);
+            if (lastData.EntityId == grid.EntityId)
+            {
+                velocity = (float)_distance - lastData.Distance;
+            }
+
+            m_Signals.Add(new SignalData(grid.EntityId, signalType, relation, (float)_distance, velocity, displayName));
+            Logger.Log("  (" + _distance + "  m) Signal is CubeGrid (" + grid.GridSizeEnum + ") [" + displayName + "]", 4);
+
+            return true;
+        }
+        
+        private SignalData TryGetLastSignalData(long _entityId)
         {
             foreach (SignalData signal in m_Signals_Last)
             {
@@ -468,65 +460,15 @@ namespace Pantenna
             return new SignalData();
         }
 
-        private bool ProcessCommand(string _command)
+        private bool IsSignalAdded(long _entityId)
         {
-            switch (_command)
+            foreach (SignalData signal in m_Signals)
             {
-                case "ReloadCfg":
-                {
-                    Logger.Log("  Executing reload command");
-                    if (ConfigManager.ClientConfig.LoadConfigFile())
-                    {
-                        MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config reloaded", 3000);
-                        m_RadarPanel.UpdatePanelConfig();
-                        m_IsHudDirty = true;
-                    }
-                    else
-                    {
-                        MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config reload failed", 3000);
-                    }
+                if (signal.EntityId == _entityId)
                     return true;
-                }
-                case "LoadedCfg":
-                {
-                    Logger.Log("  Executing LoadedCfg command");
-                    //MyAPIGateway.Utilities.ShowNotification("[Pantenna] LoadedCfg Command", 3000);
-                    string configs = MyAPIGateway.Utilities.SerializeToXML(ConfigManager.ClientConfig);
-                    MyAPIGateway.Utilities.ShowMissionScreen(
-                        screenTitle: "Loaded Configs",
-                        currentObjectivePrefix: "",
-                        currentObjective: "ClientConfig.xml",
-                        screenDescription: configs,
-                        okButtonCaption: "Close"
-                    );
-                    return true;
-                }
-                case "PeekCfg":
-                {
-                    Logger.Log("  Executing PeekCfg command");
-                    //MyAPIGateway.Utilities.ShowNotification("[Pantenna] PeekCfg Command", 3000);
-                    string configs = ConfigManager.ClientConfig.PeekConfigFile();
-                    MyAPIGateway.Utilities.ShowMissionScreen(
-                        screenTitle: "Raw Config File",
-                        currentObjectivePrefix: "",
-                        currentObjective: "ClientConfig.xml",
-                        screenDescription: configs,
-                        okButtonCaption: "Close"
-                    );
-                    return true;
-                }
-                default:
-                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Unknown Command [" + _command + "]", 3000);
-                    Logger.Log("Unknown argument [" + _command + "]");
-                    return false;
             }
-            
-            //else if (arg.StartsWith("opacity="))
-            //{
-            //    float.TryParse(arg.Remove(0, 8), out magicNum);
-            //    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Opacity coeff. changed to " + magicNum, 3000);
-            //    UpdateHudConfigs();
-            //}
+
+            return false;
         }
 
         private void UpdateHudConfigs()
@@ -543,78 +485,38 @@ namespace Pantenna
             //m_HudBGColor = Color.White * m_HudBGOpacity * m_HudBGOpacity * magicNum;
             //m_HudBGColor.A = (byte)(m_HudBGOpacity * 255.0f);
 
-            if (m_RadarPanel != null)
-            {
-                m_RadarPanel.Visible = m_IsHudVisible;
-                m_RadarPanel.BackgroundOpacity = m_HudBGOpacity;
-                m_RadarPanel.UpdatePanelConfig();
-                m_IsHudDirty = true;
-            }
-
+            UpdatePanelConfig();
         }
 
-        //public static MyRelationsBetweenPlayers GetRelationsBetweenPlayers(long _playerId1, long _playerId2)
-        //{
-        //    if (_playerId1 == _playerId2)
-        //        return MyRelationsBetweenPlayers.Self;
-
-        //    IMyFaction faction1 = MyAPIGateway.Session.Factions.TryGetPlayerFaction(_playerId1);
-        //    IMyFaction faction2 = MyAPIGateway.Session.Factions.TryGetPlayerFaction(_playerId2);
-
-        //    if (faction1 == null || faction2 == null)
-        //        return MyRelationsBetweenPlayers.Enemies;
-
-        //    if (faction1 == faction2)
-        //        return MyRelationsBetweenPlayers.Self;
-
-        //    if (MyAPIGateway.Session.Factions.GetRelationBetweenFactions(faction1.FactionId, faction2.FactionId) == MyRelationsBetweenFactions.Neutral)
-        //        return MyRelationsBetweenPlayers.Neutral;
-
-        //    return MyRelationsBetweenPlayers.Enemies;
-        //}
-
-        private void InitTextHud()
+        private void UpdatePanelConfig()
         {
-            Logger.Log("Starting InitTextHud()", 3);
-            ClientConfig config = ConfigManager.ClientConfig;
-
-            if (!m_TextHudAPI.Heartbeat)
+            if (ConfigManager.ClientConfig.ModEnabled)
             {
-                Logger.Log("  Text Hud API hasn't recieved heartbeat.", 3);
-                if (m_Ticks % config.ClientUpdateInterval == 0)
+                if (m_RadarPanel != null)
                 {
-                    MyAPIGateway.Utilities.ShowNotification("Text HUD API mod is missing. HUD will not be displayed.", (config.ClientUpdateInterval * (int)(100.0f / 6.0f)), MyFontEnum.Red);
-                    Logger.Log("  Text Hud API mod is missing.", 3);
+                    m_RadarPanel.Visible = m_IsHudVisible;
+                    m_RadarPanel.BackgroundOpacity = m_HudBGOpacity;
+                    m_RadarPanel.UpdatePanelConfig();
+                    m_IsHudDirty = true;
                 }
-
-                return;
             }
-
-            m_RadarPanel = new RadarPannel()
-            {
-                Visible = m_IsHudVisible,
-                BackgroundOpacity = m_HudBGOpacity
-            };
-            m_RadarPanel.UpdatePanelConfig();
-            
-            m_IsHudDirty = true;
-            IsTextHudApiInitDone = true;
-            Logger.Log("InitTextHud() done", 3);
         }
-
+                
         private void UpdateTextHud()
         {
-            if (!IsTextHudApiInitDone)
+            ClientConfig config = ConfigManager.ClientConfig;
+            if (!m_TextHudAPI.Heartbeat)
+                return;
+            if (!config.ShowPanel)
                 return;
 
-            Logger.Log("Starting UpdateTextHud()", 3);
-            ClientConfig config = ConfigManager.ClientConfig;
+            Logger.Log("Starting UpdateTextHud()", 5);
 
             //Logger.Log("  Signal Count = " + m_Signals.Count);
             m_RadarPanel.UpdatePanel(m_Signals);
             
             m_IsHudDirty = false;
-            Logger.Log("UpdateTextHud() done", 3);
+            Logger.Log("UpdateTextHud() done", 5);
         }
 
 

@@ -19,7 +19,7 @@ namespace Pantenna
                 return string.Format("{0:F1}km", _distance);
             }
 
-            return string.Format("{0:F1} m", _distance);
+            return string.Format("{0:F1}m", _distance);
         }
     }
 
@@ -31,7 +31,7 @@ namespace Pantenna
         private Color m_HudBGColor = Color.White;
         private List<ItemCard> m_ItemCards = null; /* This keeps track of all 5 displayed item cards. */
         private Dictionary<char, float> m_CharacterSize;
-
+        
         private int m_TextureSlot = 3;
         private const float s_RadarRangeIconSize = 30.0f;
 
@@ -58,14 +58,14 @@ namespace Pantenna
             {
                 Material = MyStringId.GetOrCompute("Pantenna_BG"),
                 Origin = config.PanelPosition,
-                Width = (float)config.PanelSize.X,
-                Height = (float)config.PanelSize.Y,
+                Width = config.PanelWidth,
+                Height = 0.0f,
                 Visible = Visible,
                 BillBoardColor = CalculateBGColor(),
                 Blend = BlendTypeEnum.PostPP,
                 Options = HudAPIv2.Options.Pixel
             };
-            m_TextureSlot = 7;
+            m_TextureSlot = Constants.TEXTURE_ANTENNA;
             m_RadarRangeIcon = new HudAPIv2.BillBoardHUDMessage()
             {
                 Material = MyStringId.GetOrCompute("Pantenna_ShipIcons"),
@@ -83,9 +83,9 @@ namespace Pantenna
             m_RadarRangeLabel = new HudAPIv2.HUDMessage()
             {
                 Message = m_RadarRangeSB,
-                Origin = config.PanelPosition + new Vector2D(s_RadarRangeIconSize + config.Padding + config.SpaceBetweenItems, config.Padding + 8.0),
+                //Origin = config.PanelPosition + new Vector2D(s_RadarRangeIconSize + config.Padding + config.SpaceBetweenItems, config.Padding + 8.0 * config.ItemScale),
                 //Font = MyFontEnum.Red,
-                Scale = 16.0f,
+                Scale = 16.0f * config.ItemScale,
                 //InitialColor = color,
                 ShadowColor = Color.Black,
                 Visible = Visible,
@@ -98,12 +98,14 @@ namespace Pantenna
             //Color color = new Color(218, 62, 62);
             //Color color = Color.White;
 
-            for (int i = 0; i < 5; ++i)
+            for (int i = 0; i < Constants.DISPLAY_ITEMS_COUNT; ++i)
             {
                 ItemCard item = new ItemCard(cursorPos, color);
                 cursorPos = item.NextItemPosition;
                 m_ItemCards.Add(item);
             }
+
+            UpdatePanelConfig();
         }
 
         ~RadarPannel()
@@ -125,7 +127,7 @@ namespace Pantenna
             m_RadarRangeSB.Clear();
             m_RadarRangeSB.Append(Utils.FormatDistanceAsString(config.RadarMaxRange));
 
-            for (int i = 0; i < 5; ++i)
+            for (int i = 0; i < Constants.DISPLAY_ITEMS_COUNT; ++i)
             {
                 ItemCard item = m_ItemCards[i];
                 if (i >= _signals.Count)
@@ -137,12 +139,12 @@ namespace Pantenna
                 {
                     SignalData signal = _signals[i];
 
-                    item.Visible = Visible;
+                    item.Visible = Visible && config.ShowPanel;
                     item.SignalType = signal.SignalType;
                     item.RelativeVelocity = signal.Velocity;
                     item.Distance = signal.Distance;
 
-                    string signalDisplayName = ConstructLabelString(signal.DisplayName, item.DisplayNameLabelWidth);
+                    string signalDisplayName = ConstructLabelString(signal.DisplayName, item.DisplayNameLabelMaxWidth);
                     item.DisplayNameString = signalDisplayName;
                     
                     item.UpdateItemCard();
@@ -153,30 +155,43 @@ namespace Pantenna
         public void UpdatePanelConfig()
         {
             ClientConfig config = ConfigManager.ClientConfig;
-            
-            m_Background.Visible = Visible;
+
+            float bgWidth = config.PanelWidth;
+            if (!config.ShowSignalName)
+            {
+                bgWidth = ItemCard.ItemCardWidth + config.Padding * 2.0f;
+            }
+            float bgHeight = config.Padding * 2.0f + config.DisplayItemsCount * ItemCard.ItemCardHeight + config.SpaceBetweenItems * (ItemCard.ItemCardHeight - 1);
+
+            float cursorPosY = config.Padding;
+
+            if (config.ShowMaxRangeIcon)
+            {
+                bgHeight += s_RadarRangeIconSize + config.Padding;
+                cursorPosY += s_RadarRangeIconSize + config.Padding;
+            }
+
+            m_Background.Visible = Visible && config.ShowPanelBackground && config.ShowPanel;
             m_Background.Origin = config.PanelPosition;
-            m_Background.Width = (float)config.PanelSize.X;
-            m_Background.Height = (float)config.PanelSize.Y;
+            m_Background.Width = bgWidth;
+            m_Background.Height = bgHeight;
             m_Background.BillBoardColor = CalculateBGColor();
 
-            m_RadarRangeIcon.Visible = Visible;
+            m_RadarRangeIcon.Visible = Visible && config.ShowMaxRangeIcon && config.ShowPanel;
             m_RadarRangeIcon.Origin = config.PanelPosition;
             m_RadarRangeIcon.Offset = new Vector2D(config.Padding, config.Padding);
 
-            m_RadarRangeLabel.Visible = Visible;
+            m_RadarRangeLabel.Visible = Visible && config.ShowPanel;
             m_RadarRangeLabel.Origin = config.PanelPosition;
-            m_RadarRangeLabel.Offset = new Vector2D(s_RadarRangeIconSize + config.Padding + config.SpaceBetweenItems, config.Padding + 8.0);
-
+            m_RadarRangeLabel.Offset = new Vector2D(s_RadarRangeIconSize + config.Padding + config.SpaceBetweenItems, config.Padding + 8.0 * config.ItemScale);
             
-
-            Vector2D cursorPos = config.PanelPosition + new Vector2D(config.Padding, s_RadarRangeIconSize + config.Padding * 2.0f);
-            for (int i = 0; i < 5; ++i)
+            Vector2D cursorPos = config.PanelPosition + new Vector2D(config.Padding, cursorPosY);
+            for (int i = 0; i < Constants.DISPLAY_ITEMS_COUNT; ++i)
             {
                 ItemCard item = m_ItemCards[i];
+                item.Visible = item.Visible && config.ShowPanel;
                 item.Position = cursorPos;
-                item.TrajectorySensitivity = config.TrajectorySensitivity;
-                item.UpdateItemConfig();
+                item.UpdateItemCardConfig();
                 cursorPos = item.NextItemPosition;
             }
         }

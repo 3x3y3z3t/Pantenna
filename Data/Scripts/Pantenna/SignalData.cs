@@ -1,19 +1,9 @@
 ﻿// ;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Pantenna
 {
-    public enum SignalRelation
-    {
-        Unknown = 0,
-        Ally,
-        Neutral,
-        Enemy
-    }
+    using SignalRelation = VRage.Game.MyRelationsBetweenPlayerAndBlock;
 
     public enum SignalType
     {

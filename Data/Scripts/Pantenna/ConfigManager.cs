@@ -10,42 +10,48 @@ namespace Pantenna
 {
     internal class Constants
     {
-        //public const ushort MSG_HANDLER_ID_SYNC = 1249;
-        //public const ushort MSG_HANDLER_ID_INITIAL_SYNC = 1250;
-
         #region Server/Client Default Config
-        public const string CLIENT_CONFIG_VERSION = "5";
-        public const uint CLIENT_LOG_LEVEL = 5;
-        //public const int SERVER_UPDATE_INTERVAL = 30; // Server will update 2ups;
+        public const string CLIENT_CONFIG_VERSION = "6";
+        public const int CLIENT_LOG_LEVEL = 1;
         public const int CLIENT_UPDATE_INTERVAL = 6; // Client will update 10ups;
         #endregion
 
         #region Hud Config
-        public const float PANEL_POS_X = 1475.0f;
-        public const float PANEL_POS_Y = 590.0f;
-        public const float PANEL_WIDTH = 420.0f;
-        public const float PANEL_HEIGHT = 240.0f;
+        public const bool ALWAYS_SHOW_PANEL = false;
+        public const bool SHOW_PANEL = true;
+        public const bool SHOW_PANEL_BG = true;
+
+        public const float PANEL_POS_X = 0.0f;
+        public const float PANEL_POS_Y = 0.0f;
+        //public const float PANEL_WIDTH = 420.0f;
+        //public const float PANEL_HEIGHT = 240.0f;
+
+        public const float ITEM_WIDTH_HEIGHT = 32.0f;
+
         public const float PADDING = 10.0f;
         public const float SPACE_BETWEEN_ITEMS = 5.0f;
-        
         public const int DISPLAY_ITEMS_COUNT = 5;
         public const float ITEM_SCALE = 1.0f;
-        public const float ITEM_0_SCALE = 1.0f;
-        public const float ITEM_1_SCALE = 1.0f;
-        public const float ITEM_2_SCALE = 1.0f;
-        public const float ITEM_3_SCALE = 1.0f;
-        public const float ITEM_4_SCALE = 1.0f;
 
+        public const int TEXTURE_BLANK = 0;
+        public const int TEXTURE_BASIC_SHIELD_ICON = 0;
+        public const int TEXTURE_ADVANCED_SHIELD_ICON = 0;
+        public const int TEXTURE_SHIELD_DEFENSE_ICON = 0;
+        public const int TEXTURE_BULLET_RESIST_ICON = 0;
+        public const int TEXTURE_EXPLO_RESIST_ICON = 0;
+        public const int TEXTURE_UNIVERSAL_RESIST_ICON = 0;
+        public const int TEXTURE_RECHARGE_ICON = 0;
+        public const int TEXTURE_POWER_COST_ICON = 0;
+        public const int TEXTURE_OVERCHARGE_ICON = 0;
+        
         /* 
         BG: 80 92 103
         FG: 187 233 246
         AnimatedSegment: 212 251 254 0.7
         */
-
         #endregion
 
-        public const float RADAR_MAX_RANGE = 2500.0f;
-        public const float TRAJECTORY_SENSITIVITY = 0.2f;
+        public const bool ENABLE_MOD = true;
 
 
 
@@ -82,7 +88,7 @@ namespace Pantenna
     public class Config
     {
         public string ConfigVersion { get; set; }
-        public uint LogLevel { get; set; }
+        public int LogLevel { get; set; }
 
         protected string m_ConfigFileName = "";
 
@@ -207,31 +213,21 @@ namespace Pantenna
 
     public class ClientConfig : Config
     {
-
-        #region Server/Client Updates Config
         public int ClientUpdateInterval { get; set; }
-        #endregion
+        
+        public bool ShowPanel { get; set; }
+        public bool ShowPanelBackground { get; set; }
+        public bool ShowMaxRangeIcon { get; set; }
+        public bool ShowSignalName { get; set; }
 
-        #region Hud Config
         public Vector2D PanelPosition { get; set; }
-        [XmlIgnore]
-        public Vector2D PanelSize { get; set; }
+        public float PanelWidth { get; set; }
         public float Padding { get; set; }
-
-        //public float ShipIconOffsX { get; set; }
-        //public float TrajectoryIconOffsX { get; set; }
-        //public float DistanceIconOffsX { get; set; }
-        //public float DisplayNameIconOffsX { get; set; }
-
-        public int DisplayItemsCount { get; set; }
         public float SpaceBetweenItems { get; set; }
-        public float ItemScale0 { get; set; }
-        public float ItemScale1 { get; set; }
-        public float ItemScale2 { get; set; }
-        public float ItemScale3 { get; set; }
-        public float ItemScale4 { get; set; }
-        #endregion
-
+        public int DisplayItemsCount { get; set; }
+        public float ItemScale { get; set; }
+        
+        public bool ModEnabled { get; set; }
         public float RadarMaxRange { get; set; }
         public float TrajectorySensitivity { get; set; }
 
@@ -248,19 +244,20 @@ namespace Pantenna
             LogLevel = Constants.CLIENT_LOG_LEVEL;
 
             ClientUpdateInterval = Constants.CLIENT_UPDATE_INTERVAL;
-            
+
+            ShowPanel = Constants.SHOW_PANEL;
+            ShowPanelBackground = Constants.SHOW_PANEL_BG;
+            ShowMaxRangeIcon = Constants.SHOW_MAX_RANGE_ICON;
+            ShowSignalName = Constants.SHOW_SIGNAL_NAME;
+
             PanelPosition = new Vector2D(Constants.PANEL_POS_X, Constants.PANEL_POS_Y);
-            PanelSize = new Vector2D(Constants.PANEL_WIDTH, Constants.PANEL_HEIGHT);
+            PanelWidth = Constants.PANEL_WIDTH;
             Padding = Constants.PADDING;
-
-            DisplayItemsCount = Constants.DISPLAY_ITEMS_COUNT;
             SpaceBetweenItems = Constants.SPACE_BETWEEN_ITEMS;
-            ItemScale0 = Constants.ITEM_0_SCALE;
-            ItemScale1 = Constants.ITEM_1_SCALE;
-            ItemScale2 = Constants.ITEM_2_SCALE;
-            ItemScale3 = Constants.ITEM_3_SCALE;
-            ItemScale4 = Constants.ITEM_4_SCALE;
+            DisplayItemsCount = Constants.DISPLAY_ITEMS_COUNT;
+            ItemScale = Constants.ITEM_SCALE;
 
+            ModEnabled = Constants.ENABLE_MOD;
             RadarMaxRange = Constants.RADAR_MAX_RANGE;
             TrajectorySensitivity = Constants.TRAJECTORY_SENSITIVITY;
 
@@ -309,26 +306,31 @@ namespace Pantenna
 
             ClientUpdateInterval = config.ClientUpdateInterval;
 
+            ShowPanel = config.ShowPanel;
+            ShowPanelBackground = config.ShowPanelBackground;
+            ShowMaxRangeIcon = config.ShowMaxRangeIcon;
+            ShowSignalName = config.ShowSignalName;
+
             PanelPosition = config.PanelPosition;
-            PanelSize = config.PanelSize;
+            PanelWidth = config.PanelWidth;
             Padding = config.Padding;
-
-            //ShipIconOffsX = config.ShipIconOffsX;
-            //TrajectoryIconOffsX = config.TrajectoryIconOffsX;
-            //DistanceIconOffsX = config.DistanceIconOffsX;
-            //DisplayNameIconOffsX = config.DisplayNameIconOffsX;
-
-            DisplayItemsCount = config.DisplayItemsCount;
             SpaceBetweenItems = config.SpaceBetweenItems;
-            ItemScale0 = config.ItemScale0;
-            ItemScale1 = config.ItemScale1;
-            ItemScale2 = config.ItemScale2;
-            ItemScale3 = config.ItemScale3;
-            ItemScale4 = config.ItemScale4;
+            DisplayItemsCount = config.DisplayItemsCount;
+            ItemScale = config.ItemScale;
 
+            ModEnabled = config.ModEnabled;
             RadarMaxRange = config.RadarMaxRange;
             TrajectorySensitivity = config.TrajectorySensitivity;
-            
+
+            if (PanelWidth < 0.0f)
+                PanelWidth = 0.0f;
+            if (DisplayItemsCount < 1)
+                DisplayItemsCount = 1;
+            if (DisplayItemsCount > 5)
+                DisplayItemsCount = 5;
+            if (ItemScale < 0.0f)
+                ItemScale = 0.0f;
+
             if (!versionMatch)
             {
                 // config version mismatch;
