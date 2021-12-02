@@ -1,5 +1,5 @@
 ﻿// ;
-using ExSharedCore;
+using ExShared;
 using Sandbox.ModAPI;
 using System;
 
@@ -19,7 +19,15 @@ namespace Pantenna
             for (int i = 1; i < commands.Length; ++i)
             {
                 string cmd = commands[i].Trim();
-                ProcessSingleCommand(cmd);
+                Logger.Log("    Processing command " + i + ": " + cmd, 1);
+                if (ProcessSingleCommand(cmd))
+                {
+                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Command executed.", 1000);
+                }
+                else
+                {
+                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Command execution failed. See log for more info.", 1000);
+                }
             }
 
             return true;
@@ -31,30 +39,9 @@ namespace Pantenna
 
             if (_command == "Enable")
             {
-                Logger.Log("  Execute Enable command");
+                Logger.Log("      Execute Enable command", 1);
                 config.ModEnabled = true;
                 MyAPIGateway.Utilities.ShowNotification("[Pantenna] Mod enabled (effective this session only)", 3000);
-                return true;
-            }
-
-            if (_command.StartsWith("ShowPanel"))
-            {
-                if (!_command.Contains("="))
-                {
-                    Logger.Log("  No argument");
-                    return false;
-                }
-
-                bool flag = false;
-                if (!bool.TryParse(_command.Substring(10), out flag))
-                {
-                    Logger.Log("  Bad argument");
-                    return false;
-                }
-
-                Logger.Log("  Execute ShowPanel command with argument '" + flag + "'");
-                config.ShowPanel = flag;
-                UpdatePanelConfig();
                 return true;
             }
 
@@ -62,19 +49,41 @@ namespace Pantenna
             {
                 if (!_command.Contains("="))
                 {
-                    Logger.Log("  No argument");
+                    Logger.Log("      No argument", 1);
                     return false;
                 }
 
                 bool flag = false;
                 if (!bool.TryParse(_command.Substring(12), out flag))
                 {
-                    Logger.Log("  Bad argument");
+                    Logger.Log("      Bad argument", 1);
+                    //Logger.Log("        expect true/false, got " + _command.Substring(12), 1);
                     return false;
                 }
 
-                Logger.Log("  Execute ShowPanelBG command with argument '" + flag + "'");
+                Logger.Log("      Execute ShowPanelBG command with argument '" + flag + "'", 1);
                 config.ShowPanelBackground = flag;
+                UpdatePanelConfig();
+                return true;
+            }
+
+            if (_command.StartsWith("ShowPanel"))
+            {
+                if (!_command.Contains("="))
+                {
+                    Logger.Log("      No argument", 1);
+                    return false;
+                }
+
+                bool flag = false;
+                if (!bool.TryParse(_command.Substring(10), out flag))
+                {
+                    Logger.Log("      Bad argument", 1);
+                    return false;
+                }
+
+                Logger.Log("      Execute ShowPanel command with argument '" + flag + "'", 1);
+                config.ShowPanel = flag;
                 UpdatePanelConfig();
                 return true;
             }
@@ -83,19 +92,19 @@ namespace Pantenna
             {
                 if (!_command.Contains("="))
                 {
-                    Logger.Log("  No argument");
+                    Logger.Log("      No argument", 1);
                     return false;
                 }
 
                 bool flag = false;
                 if (!bool.TryParse(_command.Substring(12), out flag))
                 {
-                    Logger.Log("  Bad argument");
+                    Logger.Log("      Bad argument", 1);
                     return false;
                 }
 
-                Logger.Log("  Execute MinimalMode command with argument '" + flag + "'");
-                config.ShowSignalName = flag;
+                Logger.Log("      Execute MinimalMode command with argument '" + flag + "'", 1);
+                config.ShowSignalName = !flag;
                 UpdatePanelConfig();
                 return true;
             }
@@ -104,18 +113,18 @@ namespace Pantenna
             {
                 if (!_command.Contains("="))
                 {
-                    Logger.Log("  No argument");
+                    Logger.Log("      No argument", 1);
                     return false;
                 }
 
                 float scale = 1.0f;
                 if (!float.TryParse(_command.Substring(6), out scale) || scale < 0.0f)
                 {
-                    Logger.Log("  Bad argument");
+                    Logger.Log("      Bad argument", 1);
                     return false;
                 }
 
-                Logger.Log("  Execute Scale command with argument '" + scale + "'");
+                Logger.Log("      Execute Scale command with argument '" + scale + "'", 1);
                 config.ItemScale = scale;
                 UpdatePanelConfig();
                 return true;
@@ -125,12 +134,12 @@ namespace Pantenna
             {
                 if (!_command.Contains("="))
                 {
-                    Logger.Log("  No argument");
+                    Logger.Log("      No argument", 1);
                     return false;
                 }
                 if (!_command.Contains(","))
                 {
-                    Logger.Log("  Bad argument");
+                    Logger.Log("      Bad argument", 1);
                     return false;
                 }
 
@@ -142,32 +151,32 @@ namespace Pantenna
                 if (!float.TryParse(_command.Substring(9, index1 - 9), out x) || !float.TryParse(_command.Substring(index1 + 1), out y)
                     || (x < 0.0f || y < 0.0f))
                 {
-                    Logger.Log("  Bad argument");
+                    Logger.Log("      Bad argument", 1);
                     return false;
                 }
 
-                Logger.Log("  Execute PanelPos command with arguments (" + x + ", " + y + ")");
+                Logger.Log("      Execute PanelPos command with arguments (" + x + ", " + y + ")", 1);
                 config.PanelPosition = new VRageMath.Vector2D(x, y);
                 UpdatePanelConfig();
                 return true;
             }
-            
+
             if (_command.StartsWith("PanelWidth"))
             {
                 if (!_command.Contains("="))
                 {
-                    Logger.Log("  No argument");
+                    Logger.Log("      No argument", 1);
                     return false;
                 }
 
                 float w = 0.0f;
                 if (!float.TryParse(_command.Substring(11), out w) || w < 0.0f)
                 {
-                    Logger.Log("  Bad argument");
+                    Logger.Log("      Bad argument");
                     return false;
                 }
 
-                Logger.Log("  Execute PanelWidth command with arguments '" + w + "'");
+                Logger.Log("      Execute PanelWidth command with arguments '" + w + "'", 1);
                 config.PanelWidth = w;
                 UpdatePanelConfig();
                 return true;
@@ -177,25 +186,25 @@ namespace Pantenna
             {
                 if (!_command.Contains("="))
                 {
-                    Logger.Log("  No argument");
+                    Logger.Log("      No argument", 1);
                     return false;
                 }
 
                 float range = 0.0f;
                 if (!float.TryParse(_command.Substring(11), out range) || range < 0.0f)
                 {
-                    Logger.Log("  Bad argument");
+                    Logger.Log("      Bad argument", 1);
                     return false;
                 }
 
-                Logger.Log("  Execute RadarRange command with arguments '" + range + "'");
+                Logger.Log("      Execute RadarRange command with arguments '" + range + "'", 1);
                 config.RadarMaxRange = range;
                 return true;
             }
 
             if (_command == "ReloadCfg")
             {
-                Logger.Log("  Executing reload command");
+                Logger.Log("      Executing reload command", 1);
                 if (ConfigManager.ClientConfig.LoadConfigFile())
                 {
                     MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config reloaded", 3000);
@@ -208,7 +217,20 @@ namespace Pantenna
                 }
                 return true;
             }
-            
+
+            if (_command == "SaveCfg")
+            {
+                Logger.Log("      Executing save command", 1);
+                if (ConfigManager.ClientConfig.SaveConfigFile())
+                {
+                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config saved", 3000);
+                }
+                else
+                {
+                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config saving failed", 3000);
+                }
+            }
+
             #region Debug
             if (_command == "LoadedCfg")
             {
@@ -241,7 +263,7 @@ namespace Pantenna
             #endregion
 
             MyAPIGateway.Utilities.ShowNotification("[Pantenna] Unknown Command [" + _command + "]", 3000);
-            Logger.Log("Unknown argument [" + _command + "]");
+            Logger.Log("      Unknown command [" + _command + "]", 1);
             return false;
 
 

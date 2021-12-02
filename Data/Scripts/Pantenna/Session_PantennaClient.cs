@@ -1,7 +1,6 @@
 ﻿// ;
 using Draygo.API;
-using ExSharedCore;
-using Sandbox.Game;
+using ExShared;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using System;
@@ -51,7 +50,7 @@ namespace Pantenna
         private List<SignalData> m_Signals = null; /* This keeps track of all non-relayed visible enemy signals. */
         private List<SignalData> m_Signals_Last = null; /* This keeps track of all non-relayed visible enemy signals IN PREVIOUS UPDATE. */
 
-        private RadarPannel m_RadarPanel = null;
+        private RadarPanel m_RadarPanel = null;
                 
         private HudAPIv2 m_TextHudAPI = null;
         //private bool IsTextHudApiInitDone = false;
@@ -152,7 +151,7 @@ namespace Pantenna
             if (!_messageText.StartsWith(prefix))
                 return;
 
-            Logger.Log("  Command captured: " + _messageText, 3);
+            Logger.Log("  Chat Command captured: " + _messageText, 1);
             ProcessCommands(_messageText);
                         
             _sendToOthers = false;
@@ -180,12 +179,13 @@ namespace Pantenna
             Logger.Log("Starting InitTextHudCallback()", 5);
             ClientConfig config = ConfigManager.ClientConfig;
             
-            m_RadarPanel = new RadarPannel()
+            m_RadarPanel = new RadarPanel()
             {
                 Visible = m_IsHudVisible,
                 BackgroundOpacity = m_HudBGOpacity
             };
             //m_RadarPanel.UpdatePanelConfig();
+            UpdateHudConfigs();
 
             m_IsHudDirty = true;
             //IsTextHudApiInitDone = true;
@@ -324,13 +324,13 @@ namespace Pantenna
 
                 if (TryInterpretSignalAsCharacter(broadcaster.Entity, distance))
                 {
-                    Logger.Log("  (" + distance + "  m) Signal is Character [" + broadcaster.Entity.DisplayName + "]", 4);
+                    //Logger.Log("  (" + distance + "  m) Signal is Character [" + broadcaster.Entity.DisplayName + "]", 4);
                     continue;
                 }
 
                 if (TryInterpretSignalAsCubeGrid(broadcaster.Entity, distance))
                 {
-                    Logger.Log("  (" + distance + "  m) Signal is Grid [" + broadcaster.Entity.DisplayName + "]", 4);
+                    //Logger.Log("  (" + distance + "  m) Signal is Grid [" + broadcaster.Entity.DisplayName + "]", 4);
                     continue;
                 }
 
@@ -357,7 +357,7 @@ namespace Pantenna
 
             if (charSignal.EntityId == MyAPIGateway.Session.Player.Character.EntityId)
             {
-                Logger.Log("  (" + _distance + "  m) Signal is Me [" + charSignal.DisplayName + "]", 4);
+                Logger.Log("  (" + _distance + "  m) Signal is Me [" + charSignal.DisplayName + "]", 4); // distance should be 0;
                 return true;
             }
 
@@ -484,12 +484,14 @@ namespace Pantenna
             //m_HudBGColor = Color.FromNonPremultiplied(41, 54, 62, 255) * m_HudBGOpacity * m_HudBGOpacity * 1.075f;
             //m_HudBGColor = Color.White * m_HudBGOpacity * m_HudBGOpacity * magicNum;
             //m_HudBGColor.A = (byte)(m_HudBGOpacity * 255.0f);
-
+            
             UpdatePanelConfig();
         }
 
         private void UpdatePanelConfig()
         {
+            Logger.Log(">> m_IsHudVisible = " + m_IsHudVisible);
+
             if (ConfigManager.ClientConfig.ModEnabled)
             {
                 if (m_RadarPanel != null)

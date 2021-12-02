@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using VRage.Utils;
 
-namespace ExSharedCore
+namespace ExShared
 {
     public enum LoggerSide
     {
@@ -22,11 +22,12 @@ namespace ExSharedCore
         private TextWriter m_TextWriter;
         private TextWriter m_CustomTextWriter;
         private int m_LogLevel = 5;
+        private bool m_IsSuppressed = false;
 
         public static string CustomLogFilename { get; set; }
         private static Logger s_Instance = null;
 
-        /// <summary> Initializes Logger instance. Unless spacified, Logger Side is be Common by default. </summary>
+        /// <summary> Initializes Logger instance. Unless spacified, Logger Side is Common by default. </summary>
         /// <param name="_loggerSide">indicates which side, client or server, this Logger instance is working on</param>
         /// <returns>true if the initialization success, otherwise false</returns>
         public static bool Init(LoggerSide _loggerSide)
@@ -45,19 +46,19 @@ namespace ExSharedCore
                     case LoggerSide.Server:
                         s_Instance = new Logger
                         {
-                            m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage("debug_server.log", typeof(ExSharedCore.Logger))
+                            m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage("debug_server.log", typeof(ExShared.Logger))
                         };
                         break;
                     case LoggerSide.Client:
                         s_Instance = new Logger
                         {
-                            m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage("debug_client.log", typeof(ExSharedCore.Logger))
+                            m_TextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage("debug_client.log", typeof(ExShared.Logger))
                         };
                         break;
                     default:
                         s_Instance = new Logger
                         {
-                            m_CustomTextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage(CustomLogFilename, typeof(ExSharedCore.Logger))
+                            m_CustomTextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage(CustomLogFilename, typeof(ExShared.Logger))
                         };
                         break;
                 }
@@ -90,7 +91,7 @@ namespace ExSharedCore
             Log(">>> Initializing Custom Logger...");
             try
             {
-                s_Instance.m_CustomTextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage(CustomLogFilename, typeof(ExSharedCore.Logger));
+                s_Instance.m_CustomTextWriter = MyAPIGateway.Utilities.WriteFileInWorldStorage(CustomLogFilename, typeof(ExShared.Logger));
             }
             catch (Exception _e)
             {
@@ -137,10 +138,21 @@ namespace ExSharedCore
             s_Instance.m_LogLevel = _level;
         }
 
+        public static void SuppressLogger(bool _enable)
+        {
+            if (s_Instance == null)
+                InitCustom();
+
+            s_Instance.m_IsSuppressed = _enable;
+        }
+
         public static void Log(string _message, int _level = 0, bool _writeToCustomStream = false)
         {
             if (s_Instance == null)
                 InitCustom();
+
+            if (s_Instance.m_IsSuppressed)
+                return;
          
             // custom logging bypass all log level settings;
             if (_writeToCustomStream)
