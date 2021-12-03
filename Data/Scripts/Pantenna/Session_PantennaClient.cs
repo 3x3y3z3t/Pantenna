@@ -383,8 +383,16 @@ namespace Pantenna
                 velocity = (float)_distance - lastData.Distance;
             }
 
-            m_Signals.Add(new SignalData(charSignal.EntityId, SignalType.Character, relation, (float)_distance, velocity, displayName));
-            Logger.Log("  (" + _distance + "  m) Signal is Character [" + displayName + "]", 4);
+            Logger.Log("  (" + _distance + "  m) Signal is Character [" + displayName + "] (" + relation + ")", 4);
+            if (relation == MyRelationsBetweenPlayerAndBlock.Enemies)
+            {
+                Logger.Log("  (" + _distance + "  m) Signal is Character [" + displayName + "] (" + relation + ")", 4);
+                m_Signals.Add(new SignalData(charSignal.EntityId, SignalType.Character, relation, (float)_distance, velocity, displayName));
+            }
+            else
+            {
+                Logger.Log("  (" + _distance + "  m) Signal is Character [" + displayName + "] (" + relation + ") (ignored)", 4);
+            }
 
             return true;
         }
@@ -410,8 +418,10 @@ namespace Pantenna
                 return true;
             }
 
-            MyRelationsBetweenPlayerAndBlock relation = MyAPIGateway.Session.Player.GetRelationTo(block.OwnerId);
-
+            MyRelationsBetweenPlayerAndBlock relation = MyRelationsBetweenPlayerAndBlock.NoOwnership;
+            if (block.OwnerId != 0)
+                relation = MyAPIGateway.Session.Player.GetRelationTo(block.OwnerId);
+            
             SignalType signalType = SignalType.Unknown;
             switch (grid.GridSizeEnum)
             {
@@ -442,9 +452,16 @@ namespace Pantenna
             {
                 velocity = (float)_distance - lastData.Distance;
             }
-
-            m_Signals.Add(new SignalData(grid.EntityId, signalType, relation, (float)_distance, velocity, displayName));
-            Logger.Log("  (" + _distance + "  m) Signal is CubeGrid (" + grid.GridSizeEnum + ") [" + displayName + "]", 4);
+            
+            if (relation == MyRelationsBetweenPlayerAndBlock.Enemies)
+            {
+                Logger.Log("  (" + _distance + "  m) Signal is CubeGrid (" + grid.GridSizeEnum + ") [" + displayName + "] (" + relation + ")", 4);
+                m_Signals.Add(new SignalData(grid.EntityId, signalType, relation, (float)_distance, velocity, displayName));
+            }
+            else
+            {
+                Logger.Log("  (" + _distance + "  m) Signal is CubeGrid (" + grid.GridSizeEnum + ") [" + displayName + "] (" + relation + ") (ignored)", 4);
+            }
 
             return true;
         }
@@ -490,8 +507,7 @@ namespace Pantenna
 
         private void UpdatePanelConfig()
         {
-            Logger.Log(">> m_IsHudVisible = " + m_IsHudVisible);
-
+            Logger.SuppressLogger(true);
             if (ConfigManager.ClientConfig.ModEnabled)
             {
                 if (m_RadarPanel != null)
@@ -502,6 +518,7 @@ namespace Pantenna
                     m_IsHudDirty = true;
                 }
             }
+            Logger.SuppressLogger(false);
         }
                 
         private void UpdateTextHud()
@@ -512,6 +529,7 @@ namespace Pantenna
             if (!config.ShowPanel)
                 return;
 
+            Logger.SuppressLogger(true);
             Logger.Log("Starting UpdateTextHud()", 5);
 
             //Logger.Log("  Signal Count = " + m_Signals.Count);
@@ -519,6 +537,7 @@ namespace Pantenna
             
             m_IsHudDirty = false;
             Logger.Log("UpdateTextHud() done", 5);
+            Logger.SuppressLogger(false);
         }
 
 

@@ -229,6 +229,7 @@ namespace Pantenna
                 {
                     MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config saving failed", 3000);
                 }
+                return true;
             }
 
             #region Debug

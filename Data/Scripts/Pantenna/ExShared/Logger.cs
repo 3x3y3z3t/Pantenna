@@ -138,12 +138,12 @@ namespace ExShared
             s_Instance.m_LogLevel = _level;
         }
 
-        public static void SuppressLogger(bool _enable)
+        public static void SuppressLogger(bool _suppress = true)
         {
             if (s_Instance == null)
                 InitCustom();
 
-            s_Instance.m_IsSuppressed = _enable;
+            s_Instance.m_IsSuppressed = _suppress;
         }
 
         public static void Log(string _message, int _level = 0, bool _writeToCustomStream = false)
