@@ -222,7 +222,7 @@ namespace Pantenna
             {
                 Logger.Log("  Executing LoadedCfg command");
                 string configs = MyAPIGateway.Utilities.SerializeToXML(ConfigManager.ClientConfig);
-                configs += "\nViewport Size = " + s_ViewportSize.ToString();
+                //configs += "\nViewport Size = " + s_ViewportSize.ToString();
                 MyAPIGateway.Utilities.ShowMissionScreen(
                     screenTitle: "Loaded Configs",
                     currentObjectivePrefix: "",
