@@ -62,6 +62,8 @@ namespace Pantenna
 
         private int m_Ticks = 0;
 
+        private static Vector2 s_ViewportSize = Vector2.Zero;
+
         public override void LoadData()
         {
             Logger.Init(LoggerSide.Client);
@@ -189,7 +191,9 @@ namespace Pantenna
 
             m_IsHudDirty = true;
             //IsTextHudApiInitDone = true;
-            
+
+            InitModSettingsMenu();
+
             Logger.Log("InitTextHudCallback() done", 5);
         }
 
@@ -495,6 +499,10 @@ namespace Pantenna
                 m_HudBGOpacity = MyAPIGateway.Session.Config.HUDBkOpacity;
                 m_IsHudVisible = MyAPIGateway.Session.Config.HudState != 0; // 0 = Off, 1 = Hints, 2 = Basic;
             }
+            if (MyAPIGateway.Session.Camera != null)
+            {
+                s_ViewportSize = MyAPIGateway.Session.Camera.ViewportSize;
+            }
 
             //// https://github.com/THDigi/BuildInfo/blob/master/Data/Scripts/BuildInfo/Utilities/Utils.cs#L256-L263
             //// SK: Stolen stuff
@@ -528,8 +536,7 @@ namespace Pantenna
                 return;
             if (!config.ShowPanel)
                 return;
-
-            Logger.SuppressLogger(true);
+            
             Logger.Log("Starting UpdateTextHud()", 5);
 
             //Logger.Log("  Signal Count = " + m_Signals.Count);
@@ -537,7 +544,6 @@ namespace Pantenna
             
             m_IsHudDirty = false;
             Logger.Log("UpdateTextHud() done", 5);
-            Logger.SuppressLogger(false);
         }
 
 

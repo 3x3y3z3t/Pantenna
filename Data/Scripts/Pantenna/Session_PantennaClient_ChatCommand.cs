@@ -12,7 +12,7 @@ namespace Pantenna
             string[] commands = _commands.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             if (commands.Length <= 1)
             {
-                MyAPIGateway.Utilities.ShowNotification("[Pantenna] You didn't specify any command", 2000);
+                MyAPIGateway.Utilities.ShowNotification("[" + Constants.LOG_PREFIX + "] You didn't specify any command", 2000);
                 return false;
             }
 
@@ -22,11 +22,11 @@ namespace Pantenna
                 Logger.Log("    Processing command " + i + ": " + cmd, 1);
                 if (ProcessSingleCommand(cmd))
                 {
-                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Command executed.", 1000);
+                    MyAPIGateway.Utilities.ShowNotification("[" + Constants.LOG_PREFIX + "] Command executed.", 2000);
                 }
                 else
                 {
-                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Command execution failed. See log for more info.", 1000);
+                    MyAPIGateway.Utilities.ShowNotification("[" + Constants.LOG_PREFIX + "] Command execution failed. See log for more info.", 2000);
                 }
             }
 
@@ -41,7 +41,8 @@ namespace Pantenna
             {
                 Logger.Log("      Execute Enable command", 1);
                 config.ModEnabled = true;
-                MyAPIGateway.Utilities.ShowNotification("[Pantenna] Mod enabled (effective this session only)", 3000);
+                RefreshSettingsMenuRootItem();
+                MyAPIGateway.Utilities.ShowNotification("[" + Constants.LOG_PREFIX + "] Mod enabled (effective this session only)", 2000);
                 return true;
             }
 
@@ -205,30 +206,14 @@ namespace Pantenna
             if (_command == "ReloadCfg")
             {
                 Logger.Log("      Executing reload command", 1);
-                if (ConfigManager.ClientConfig.LoadConfigFile())
-                {
-                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config reloaded", 3000);
-                    m_RadarPanel.UpdatePanelConfig();
-                    m_IsHudDirty = true;
-                }
-                else
-                {
-                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config reload failed", 3000);
-                }
+                LoadConfig();
                 return true;
             }
 
             if (_command == "SaveCfg")
             {
                 Logger.Log("      Executing save command", 1);
-                if (ConfigManager.ClientConfig.SaveConfigFile())
-                {
-                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config saved", 3000);
-                }
-                else
-                {
-                    MyAPIGateway.Utilities.ShowNotification("[Pantenna] Config saving failed", 3000);
-                }
+                SaveConfig();
                 return true;
             }
 
@@ -237,6 +222,7 @@ namespace Pantenna
             {
                 Logger.Log("  Executing LoadedCfg command");
                 string configs = MyAPIGateway.Utilities.SerializeToXML(ConfigManager.ClientConfig);
+                configs += "\nViewport Size = " + s_ViewportSize.ToString();
                 MyAPIGateway.Utilities.ShowMissionScreen(
                     screenTitle: "Loaded Configs",
                     currentObjectivePrefix: "",
@@ -263,11 +249,10 @@ namespace Pantenna
             }
             #endregion
 
-            MyAPIGateway.Utilities.ShowNotification("[Pantenna] Unknown Command [" + _command + "]", 3000);
+            MyAPIGateway.Utilities.ShowNotification("[" + Constants.LOG_PREFIX + "] Unknown Command [" + _command + "]", 2000);
             Logger.Log("      Unknown command [" + _command + "]", 1);
             return false;
-
-
+            
             //else if (arg.StartsWith("opacity="))
             //{
             //    float.TryParse(arg.Remove(0, 8), out magicNum);

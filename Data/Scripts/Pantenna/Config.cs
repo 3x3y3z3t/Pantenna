@@ -9,8 +9,11 @@ namespace Pantenna
 {
     internal class Constants
     {
+        public const ulong MOD_ID = 2655275786UL;
+        public const string LOG_PREFIX = "Pantenna";
+
         #region Server/Client Default Config
-        public const string CLIENT_CONFIG_VERSION = "6";
+        public const string CLIENT_CONFIG_VERSION = "7";
         public const int CLIENT_LOG_LEVEL = 1;
         public const int CLIENT_UPDATE_INTERVAL = 6; // Client will update 10ups;
         #endregion
@@ -25,8 +28,8 @@ namespace Pantenna
         public const float PANEL_POS_Y = 590.0f;
         public const float PANEL_WIDTH = 420.0f;
         //public const float PANEL_HEIGHT = 240.0f;
-        public const float PADDING = 10.0f;
-        public const float SPACE_BETWEEN_ITEMS = 5.0f;
+        public const float PADDING = 6.0f;
+        public const float MARGIN = 2.0f;
         public const int DISPLAY_ITEMS_COUNT = 5;
         public const float ITEM_SCALE = 1.0f;
 
@@ -95,7 +98,7 @@ namespace Pantenna
         public Vector2D PanelPosition { get; set; }
         public float PanelWidth { get; set; }
         public float Padding { get; set; }
-        public float SpaceBetweenItems { get; set; }
+        public float Margin { get; set; }
         public int DisplayItemsCount { get; set; }
         public float ItemScale { get; set; }
         
@@ -125,7 +128,7 @@ namespace Pantenna
             PanelPosition = new Vector2D(Constants.PANEL_POS_X, Constants.PANEL_POS_Y);
             PanelWidth = Constants.PANEL_WIDTH;
             Padding = Constants.PADDING;
-            SpaceBetweenItems = Constants.SPACE_BETWEEN_ITEMS;
+            Margin = Constants.MARGIN;
             DisplayItemsCount = Constants.DISPLAY_ITEMS_COUNT;
             ItemScale = Constants.ITEM_SCALE;
 
@@ -186,7 +189,7 @@ namespace Pantenna
             PanelPosition = config.PanelPosition;
             PanelWidth = config.PanelWidth;
             Padding = config.Padding;
-            SpaceBetweenItems = config.SpaceBetweenItems;
+            Margin = config.Margin;
             DisplayItemsCount = config.DisplayItemsCount;
             ItemScale = config.ItemScale;
 

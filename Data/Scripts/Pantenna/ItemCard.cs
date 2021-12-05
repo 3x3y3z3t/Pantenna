@@ -19,7 +19,7 @@ namespace Pantenna
         {
             get
             {
-                return new Vector2D(Position.X, Position.Y + ItemCardHeight + ConfigManager.ClientConfig.SpaceBetweenItems);
+                return new Vector2D(Position.X, Position.Y + ItemCardHeight + ConfigManager.ClientConfig.Margin * 2.0f);
             }
         }
         public float DisplayNameLabelMaxWidth
@@ -28,7 +28,7 @@ namespace Pantenna
             {
                 ClientConfig config = ConfigManager.ClientConfig;
                 //Logger.Log(">> panelWidth = " + config.PanelWidth + ", distlabelmaxwidth = " + DistanceLabelMaxWidth);
-                return config.PanelWidth - DistanceLabelMaxWidth - config.Padding * 2.0f - config.SpaceBetweenItems * 2.0f;
+                return config.PanelWidth - DistanceLabelMaxWidth - config.Padding * 2.0f - config.Margin * 2.0f;
             }
         }
 
@@ -58,7 +58,7 @@ namespace Pantenna
 
         public static float ItemCardMinWidth
         {
-            get { return ItemCardHeight * 2.0f + DistanceLabelMaxWidth + ConfigManager.ClientConfig.SpaceBetweenItems; }
+            get { return DistanceLabelMaxWidth + ConfigManager.ClientConfig.Margin * 2.0f; }
         }
 
         public static float ItemCardHeight
@@ -68,7 +68,7 @@ namespace Pantenna
 
         private static float DistanceLabelMaxWidth
         {
-            get { return ItemCardHeight * 4.0f; }
+            get { return ItemCardHeight * 4.2f + ConfigManager.ClientConfig.Margin * 2.0f; }
         }
 
         #region Internal HUD Elements
@@ -165,7 +165,7 @@ namespace Pantenna
             m_ShipIcon.Visible = Visible;
             m_TrajectoryIcon.Visible = Visible;
             m_DistanceLabel.Visible = Visible;
-            m_DisplayNameLabel.Visible = Visible;
+            m_DisplayNameLabel.Visible = Visible && config.ShowSignalName;
 
             if (!Visible)
                 return;
@@ -187,14 +187,13 @@ namespace Pantenna
             }
             m_ShipIcon.uvOffset = new Vector2((m_ShipIconTextureSlot % 4) * 0.25f, (m_ShipIconTextureSlot / 4) * 0.5f);
 
+            Logger.Log(string.Format("Vel = {0:F2}, Sens = {1:F2}", RelativeVelocity, config.TrajectorySensitivity), 5);
             if (RelativeVelocity > config.TrajectorySensitivity)
             {
-                //Logger.Log(string.Format("Vel = {0:F2}, Sens = {1:0}", RelativeVelocity, config.TrajectorySensitivity), 5);
                 m_TrajectoryTextureSlot = Constants.TEXTURE_GO_AWAY;
             }
             else if (RelativeVelocity < -config.TrajectorySensitivity)
             {
-                //Logger.Log(string.Format("Vel = {0:F2}, Sens = {1:0}", RelativeVelocity, -config.TrajectorySensitivity), 5);
                 m_TrajectoryTextureSlot = Constants.TEXTURE_APPROACH;
             }
             else
@@ -226,7 +225,7 @@ namespace Pantenna
 
             m_TrajectoryIcon.Visible = Visible;
             m_TrajectoryIcon.Origin = Position;
-            m_TrajectoryIcon.Offset = new Vector2D(ItemCardHeight * config.ItemScale, 0.0);
+            m_TrajectoryIcon.Offset = new Vector2D(ItemCardHeight, 0.0);
             m_TrajectoryIcon.Width = ItemCardHeight;
             m_TrajectoryIcon.Height = ItemCardHeight;
 
@@ -235,12 +234,12 @@ namespace Pantenna
 
             m_DistanceLabel.Visible = Visible;
             m_DistanceLabel.Origin = Position;
-            m_DistanceLabel.Offset = new Vector2D(ItemCardHeight * 2.0f + config.SpaceBetweenItems, offsY);
+            m_DistanceLabel.Offset = new Vector2D(ItemCardHeight * 2.0f + config.Margin * 2.0f, offsY);
             m_DistanceLabel.Scale = RadarPanel.LabelScale;
 
-            m_DisplayNameLabel.Visible = Visible && ConfigManager.ClientConfig.ShowSignalName;
+            m_DisplayNameLabel.Visible = Visible && config.ShowSignalName;
             m_DisplayNameLabel.Origin = Position;
-            m_DisplayNameLabel.Offset = new Vector2D(DistanceLabelMaxWidth + config.SpaceBetweenItems * 2.0f, offsY);
+            m_DisplayNameLabel.Offset = new Vector2D(DistanceLabelMaxWidth + config.Margin * 2.0f, offsY);
             m_DisplayNameLabel.Scale = RadarPanel.LabelScale;
 
             ReconstructLabelString();
@@ -262,11 +261,13 @@ namespace Pantenna
             else
             {
                 float width = GetOrCalculateCharacterSize('.') * 3.0f;
-                for (int i = 1; i < DisplayNameRawString.Length; ++i)
+                for (int i = 0; i < DisplayNameRawString.Length; ++i)
                 {
                     width += GetOrCalculateCharacterSize(DisplayNameRawString[i]);
-                    if (width >= DisplayNameLabelMaxWidth)
+                    if (width > DisplayNameLabelMaxWidth)
                     {
+                        if (i == 0)
+                            DisplayNameString = "";
                         DisplayNameString = DisplayNameRawString.Substring(0, i - 1) + "...";
                         break;
                     }

@@ -12,4 +12,4 @@ Link to mod: [Steam](https://steamcommunity.com/sharedfiles/filedetails/?id=2655
 
 # Version
 Current version:
-- v1.3
+- v1.4

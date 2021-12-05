@@ -1,4 +1,5 @@
 ﻿// ;
+using Pantenna;
 using Sandbox.ModAPI;
 using System;
 using System.IO;
@@ -15,7 +16,7 @@ namespace ExShared
 
     public class Logger
     {
-        private const string c_LogPrefix = "[Pantenna]";
+        private const string c_LogPrefix = "[" + Constants.LOG_PREFIX + "]";
 
         //private MyTimeSpan m_LocalUtcOffset;
         

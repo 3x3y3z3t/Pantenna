@@ -33,7 +33,8 @@ namespace Pantenna
         private List<ItemCard> m_ItemCards = null; /* This keeps track of all 5 displayed item cards. */
         
         private int m_TextureSlot = 3;
-        private float RadarRangeIconHeight
+
+        private static float RadarRangeIconHeight
         {
             get { return 30.0f * ConfigManager.ClientConfig.ItemScale; }
         }
@@ -41,6 +42,35 @@ namespace Pantenna
         public static float LabelScale
         {
             get { return 16.0f * ConfigManager.ClientConfig.ItemScale; }
+        }
+
+        public static float PanelMinWidth
+        {
+            get { return ItemCard.ItemCardMinWidth + ConfigManager.ClientConfig.Padding * 2.0f; }
+        }
+        public static Vector2 PanelSize
+        {
+            get
+            {
+                ClientConfig config = ConfigManager.ClientConfig;
+                float bgWidth = config.PanelWidth;
+                if (!config.ShowSignalName || bgWidth < RadarPanel.PanelMinWidth)
+                {
+                    bgWidth = ItemCard.ItemCardMinWidth + config.Padding * 2.0f;
+                }
+                float bgHeight = config.Padding * 2.0f + config.DisplayItemsCount * ItemCard.ItemCardHeight + config.Margin * 2.0f * (config.DisplayItemsCount - 1);
+                if (config.ShowMaxRangeIcon)
+                    bgHeight += config.Padding;
+
+                float cursorPosY = config.Padding;
+                if (config.ShowMaxRangeIcon)
+                {
+                    bgHeight += RadarRangeIconHeight + config.Padding;
+                    cursorPosY += RadarRangeIconHeight + config.Padding;
+                }
+
+                return new Vector2(bgWidth, bgHeight);
+            }
         }
 
         private StringBuilder m_RadarRangeSB = null;
@@ -166,35 +196,23 @@ namespace Pantenna
         {
             Logger.Log("UpdatePanelConfig()...", 5);
             ClientConfig config = ConfigManager.ClientConfig;
+
+            Vector2 panelSize = PanelSize;
+            float cursorPosY = (config.ShowMaxRangeIcon ? RadarRangeIconHeight + config.Padding : 0) + config.Padding;
             
-            float bgWidth = config.PanelWidth;
-            if (!config.ShowSignalName || bgWidth < (ItemCard.ItemCardMinWidth + config.Padding * 2.0f))
-            {
-                bgWidth = ItemCard.ItemCardMinWidth + config.Padding * 2.0f;
-            }
-            float bgHeight = config.Padding * 2.0f + config.DisplayItemsCount * ItemCard.ItemCardHeight + config.SpaceBetweenItems * (config.DisplayItemsCount - 1);
-
-            float cursorPosY = config.Padding;
-
-            if (config.ShowMaxRangeIcon)
-            {
-                bgHeight += RadarRangeIconHeight + config.Padding;
-                cursorPosY += RadarRangeIconHeight + config.Padding;
-            }
-
             Logger.Log(">>   ItemCardSize = (" + ItemCard.ItemCardWidth + ", " + ItemCard.ItemCardHeight + ")", 5);
-            Logger.Log(">>   bgWidth = " + bgWidth, 5);
+            Logger.Log(">>   bgWidth = " + panelSize.X, 5);
             Logger.Log(string.Format(">>   bgHeight = {0:0} * 2.0f + {1:0} * {2:0} + {3:0} * ({4:0} - 1) = {5:0}",
-                config.Padding, config.DisplayItemsCount, ItemCard.ItemCardHeight, config.SpaceBetweenItems, config.DisplayItemsCount, bgHeight), 5);
+                config.Padding, config.DisplayItemsCount, ItemCard.ItemCardHeight, config.Margin * 2.0f, config.DisplayItemsCount, panelSize.Y), 5);
             Logger.Log(string.Format(">>   bgHeight = {0:0} + {1:0} + {2:0} = {3:0}",
-                config.Padding * 2.0f, config.DisplayItemsCount * ItemCard.ItemCardHeight, config.SpaceBetweenItems * (config.DisplayItemsCount - 1), bgHeight), 5);
+                config.Padding * 3.0f, config.DisplayItemsCount * ItemCard.ItemCardHeight, config.Margin * 2.0f * (config.DisplayItemsCount - 1), panelSize.Y), 5);
 
             Logger.Log(">>   Visible = " + Visible + ", ShowPanelBG = " + config.ShowPanelBackground + ", ShowPanel = " + config.ShowPanel, 5);
             m_Background.Visible = Visible && config.ShowPanelBackground && config.ShowPanel;
             Logger.Log(">>     m_Background.Visible = " + m_Background.Visible, 5);
             m_Background.Origin = config.PanelPosition;
-            m_Background.Width = bgWidth;
-            m_Background.Height = bgHeight;
+            m_Background.Width = panelSize.X;
+            m_Background.Height = panelSize.Y;
             m_Background.BillBoardColor = CalculateBGColor();
 
             m_RadarRangeIcon.Visible = Visible && config.ShowMaxRangeIcon && config.ShowPanel;
@@ -204,9 +222,9 @@ namespace Pantenna
             m_RadarRangeIcon.Height = RadarRangeIconHeight;
 
             float offsY = config.Padding + RadarRangeIconHeight * 0.5f - Constants.MAGIC_LABEL_HEIGHT_16 * 0.5f * config.ItemScale;
-            m_RadarRangeLabel.Visible = Visible && config.ShowPanel;
+            m_RadarRangeLabel.Visible = Visible && config.ShowMaxRangeIcon && config.ShowPanel;
             m_RadarRangeLabel.Origin = config.PanelPosition;
-            m_RadarRangeLabel.Offset = new Vector2D(RadarRangeIconHeight + config.Padding + config.SpaceBetweenItems, config.Padding + 8.0 * config.ItemScale);
+            m_RadarRangeLabel.Offset = new Vector2D(RadarRangeIconHeight + config.Padding + config.Margin * 2.0f, config.Padding + 8.0 * config.ItemScale);
             m_RadarRangeLabel.Scale = RadarPanel.LabelScale;
             Logger.Log(">>   Scale = " + config.ItemScale + ", Label Y = " + m_RadarRangeLabel.GetTextLength().Y, 5);
             
